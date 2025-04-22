@@ -17,12 +17,42 @@ const Templates = {
         this.setActiveNavItem();
     },
     
+    /**
+     * Get the base URL for the application
+     * Works with both local development and GitHub Pages
+     * @returns {string} Base URL for the application
+     */
+    getBaseUrl() {
+        // Get the current URL
+        const currentUrl = window.location.href;
+        
+        // For GitHub Pages, we need to handle repository paths
+        // Extract the base path from the current URL
+        const urlParts = currentUrl.split('/');
+        
+        // If we're in the pages directory, go up one level
+        if (urlParts.includes('pages')) {
+            // Find the index of 'pages' in the URL
+            const pagesIndex = urlParts.indexOf('pages');
+            // Return everything up to but not including 'pages'
+            return urlParts.slice(0, pagesIndex).join('/') + '/';
+        }
+        
+        // Default case - just return the root
+        return window.location.origin + '/';
+    },
+    
     // Load navigation template and insert it
     async loadNavigation() {
         try {
             // Load the navigation template if not cached
             if (!this.cache.navigation) {
-                const response = await fetch('../../../templates/navigation.html');
+                // Use the base URL to construct the path to the navigation template
+                const baseUrl = this.getBaseUrl();
+                const templateUrl = `${baseUrl}templates/navigation.html`;
+                console.log(`Loading navigation template from: ${templateUrl}`);
+                
+                const response = await fetch(templateUrl);
                 if (!response.ok) {
                     throw new Error(`Failed to load navigation template: ${response.status}`);
                 }
