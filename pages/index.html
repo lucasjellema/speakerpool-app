@@ -18,6 +18,28 @@
 <body>
     <!-- Navigation placeholder - will be filled by templates.js -->
     <div id="navigation-placeholder"></div>
+    
+    <!-- Fallback navigation in case the template system fails -->
+    <div id="fallback-nav" style="margin: 10px 0; text-align: center;">
+        <a href="index.html" style="margin: 0 10px;">Overview</a> | 
+        <a href="speakers.html" style="margin: 0 10px;">Speakers</a> | 
+        <a href="search.html" style="margin: 0 10px;">Search</a>
+    </div>
+    
+    <script>
+    // Hide fallback navigation if the template loads successfully
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            const navPlaceholder = document.getElementById('navigation-placeholder');
+            const fallbackNav = document.getElementById('fallback-nav');
+            
+            // If the navigation placeholder has content, hide the fallback
+            if (navPlaceholder && navPlaceholder.innerHTML.trim() !== '' && fallbackNav) {
+                fallbackNav.style.display = 'none';
+            }
+        }, 500); // Give the template system time to load
+    });
+    </script>
 
     <div class="container mt-4">
         <h1>Speakerpool Overview</h1>
