@@ -8,10 +8,64 @@ const SpeakerData = {
     // Raw speaker data
     speakers: [],
     
-    // Load speaker data from JSON file
+    /**
+     * Get the base URL for the application
+     * Works with both local development and GitHub Pages
+     * @returns {string} Base URL for the application
+     */
+    getBaseUrl() {
+        // Get the current URL
+        const currentUrl = window.location.href;
+        
+        // For GitHub Pages, we need to handle repository paths
+        // Extract the base path from the current URL
+        const urlParts = currentUrl.split('/');
+        
+        // If we're in the pages directory, go up one level
+        if (urlParts.includes('pages')) {
+            // Find the index of 'pages' in the URL
+            const pagesIndex = urlParts.indexOf('pages');
+            // Return everything up to but not including 'pages'
+            return urlParts.slice(0, pagesIndex).join('/') + '/';
+        }
+        
+        // Default case - just return the root
+        return window.location.origin + '/';
+    },
+    
+    /**
+     * Get the data source URL from query parameters or use default
+     * @returns {string} URL to fetch data from
+     */
+    getDataSourceUrl() {
+        // Check if URL has query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const dataFileParam = urlParams.get('parDataFile');
+        
+        // If parDataFile parameter exists, use it as the data source
+        if (dataFileParam) {
+            console.log(`Loading data from external source: ${dataFileParam}`);
+            return dataFileParam;
+        }
+        
+        // Otherwise use the default local file with the correct base URL
+        const baseUrl = this.getBaseUrl();
+        return `${baseUrl}data/Sprekerpool.json`;
+    },
+    
+    /**
+     * Load speaker data from JSON file or URL specified in query parameter
+     * @returns {Array} Array of speaker objects
+     */
     async loadSpeakers() {
         try {
-            const response = await fetch('../../data/Sprekerpool.json');
+            const dataUrl = this.getDataSourceUrl();
+            const response = await fetch(dataUrl);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to load data: ${response.status} ${response.statusText}`);
+            }
+            
             this.speakers = await response.json();
             return this.speakers;
         } catch (error) {
