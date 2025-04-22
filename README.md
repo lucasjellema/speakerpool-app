@@ -14,6 +14,11 @@ The Speakerpool Web Application is a static web dashboard that provides an intui
 - Language distribution visualization (pie chart)
 - Interactive topic tag cloud with speaker information on hover
 
+### External Data Source Support
+- Load data from external sources using the `parDataFile` URL parameter
+- Session persistence for the data source across page navigation
+- Example: `index.html?parDataFile=https://example.com/data/speakers.json`
+
 ### Speaker Details
 - Comprehensive speaker profiles
 - Contact information and biography
@@ -131,11 +136,24 @@ The speaker data is stored in JSON format with the following structure:
 3. Create a corresponding JavaScript file if needed
 
 ### Modifying the Data Source
+
+#### Local Data
 1. Update the CSV file with new data
-2. Run the conversion script to generate a new JSON file:
+2. Run the conversion script to generate a new JSON file using the field_mapping.json file:
    ```
-   python convert_csv_to_json.py
+   python convert_csv_to_json.py --convert
    ```
+
+Note: `python convert_csv_to_json.py` will create the field_mapping.json file if it doesn't exist.
+
+#### External Data
+1. Host your JSON data file on an accessible server
+2. Access the application with the `parDataFile` parameter:
+   ```
+   https://your-app-url.com/pages/index.html?parDataFile=https://example.com/data/speakers.json
+   ```
+3. The external data source will be remembered throughout your browser session
+
 
 ## Future Enhancements
 - User authentication for managing speaker data

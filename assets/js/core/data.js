@@ -34,7 +34,7 @@ const SpeakerData = {
     },
     
     /**
-     * Get the data source URL from query parameters or use default
+     * Get the data source URL from query parameters or session storage or use default
      * @returns {string} URL to fetch data from
      */
     getDataSourceUrl() {
@@ -42,10 +42,19 @@ const SpeakerData = {
         const urlParams = new URLSearchParams(window.location.search);
         const dataFileParam = urlParams.get('parDataFile');
         
-        // If parDataFile parameter exists, use it as the data source
+        // If parDataFile parameter exists in the URL, use it and store in session
         if (dataFileParam) {
-            console.log(`Loading data from external source: ${dataFileParam}`);
+            console.log(`Loading data from URL parameter: ${dataFileParam}`);
+            // Store in session storage for persistence across page navigation
+            sessionStorage.setItem('speakerpool_dataFile', dataFileParam);
             return dataFileParam;
+        }
+        
+        // Check if we have a stored data file URL in session storage
+        const storedDataFile = sessionStorage.getItem('speakerpool_dataFile');
+        if (storedDataFile) {
+            console.log(`Loading data from session storage: ${storedDataFile}`);
+            return storedDataFile;
         }
         
         // Otherwise use the default local file with the correct base URL

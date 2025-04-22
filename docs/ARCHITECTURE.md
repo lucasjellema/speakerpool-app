@@ -120,10 +120,11 @@ The data layer is responsible for loading, processing, and providing access to s
 - `assets/js/core/data.js` - Central data module that handles data loading and processing
 
 **Responsibilities:**
-- Loading speaker data from JSON
+- Loading speaker data from JSON (local or external sources)
 - Providing methods to access and filter data
 - Processing data for visualization and display
 - Caching data to minimize repeated fetching
+- Managing data source persistence across page navigation
 
 **Design Pattern:** Singleton module with public API
 
@@ -133,8 +134,32 @@ The data layer is responsible for loading, processing, and providing access to s
 const SpeakerData = {
     speakers: [],
     
+    getDataSourceUrl() {
+        // Check URL parameters first
+        const urlParams = new URLSearchParams(window.location.search);
+        const dataFileParam = urlParams.get('parDataFile');
+        
+        if (dataFileParam) {
+            // Store in session for persistence
+            sessionStorage.setItem('speakerpool_dataFile', dataFileParam);
+            return dataFileParam;
+        }
+        
+        // Check session storage next
+        const storedDataFile = sessionStorage.getItem('speakerpool_dataFile');
+        if (storedDataFile) {
+            return storedDataFile;
+        }
+        
+        // Fall back to default local file
+        return 'data/Sprekerpool.json';
+    },
+    
     async loadSpeakers() {
-        // Load data from JSON file
+        // Load data from JSON file or external source
+        const dataUrl = this.getDataSourceUrl();
+        const response = await fetch(dataUrl);
+        this.speakers = await response.json();
     },
     
     getAllSpeakers() {
