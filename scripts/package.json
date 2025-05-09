@@ -1,0 +1,12 @@
+{
+  "name": "csv-to-json-converter",
+  "version": "1.0.0",
+  "description": "Script to convert Sprekerpool CSV data to JSON format",
+  "main": "csvToJson.js",
+  "scripts": {
+    "convert": "node csvToJson.js"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.0"
+  }
+}
