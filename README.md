@@ -29,6 +29,7 @@ A modern, modular single-page web application for managing and presenting a pool
 - Responsive design using Bootstrap 5
 - Interactive data visualizations with Chart.js
 - Event-driven architecture for real-time updates
+- URL query parameter support for direct speaker access
 
 ## Project Structure
 
@@ -82,8 +83,13 @@ sprekerpool-app-new/
 - **Speakers**: View all speakers in a sortable table format
 - **Speaker Details**: Click "View Details" on any speaker to see complete information
 - **Edit Speaker**: Click "Edit" in the speaker details modal to modify information
+- **Direct Speaker Access**: Access a specific speaker's details directly by using the URL query parameter `sprekerId` (e.g., `index.html?sprekerId=123`)
 
 ## Interactive Features
+
+### URL Parameters
+- Use `sprekerId` query parameter to directly open a specific speaker's details (e.g., `index.html?sprekerId=123`)
+- Use `parDataFile` query parameter to specify an alternative data source
 
 ### Dashboard Interactions
 - Click on company segments in the pie chart to see speakers from that company
@@ -131,6 +137,7 @@ sprekerpool-app-new/
 - Advanced filtering and sorting options
 - Export functionality for speaker data
 - Batch operations for managing multiple speakers
+- Enhanced URL parameter support for sharing filtered views
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
