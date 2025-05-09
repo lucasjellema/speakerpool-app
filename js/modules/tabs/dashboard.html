@@ -1,0 +1,78 @@
+<div class="container mt-4">
+    <h2>Speakerpool Overview</h2>
+    
+    <!-- Statistics Card -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Total Speakers</h5>
+                </div>
+                <div class="card-body">
+                    <h3 id="total-speakers-count" class="mb-2">0</h3>
+                    <p id="speakers-breakdown" class="text-muted">Loading speaker data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Row -->
+    <div class="row">
+        <!-- Company Distribution Chart -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Speakers per Company</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-wrapper" style="position: relative; height: 300px;">
+                        <canvas id="company-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Languages Chart -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Languages</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-wrapper" style="position: relative; height: 300px;">
+                        <canvas id="languages-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Topics Tag Cloud -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Topics Tag Cloud</h5>
+                </div>
+                <div class="card-body">
+                    <div id="topics-cloud" class="p-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Raw Data Preview (Hidden by default) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Raw Speaker Data</h5>
+                    <button class="btn btn-sm btn-outline-primary" id="toggle-raw-data">Show/Hide</button>
+                </div>
+                <div class="card-body" id="raw-data-container" style="display: none;">
+                    <textarea id="dashboard-data" class="form-control" rows="10" readonly></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

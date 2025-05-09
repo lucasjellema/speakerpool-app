@@ -1,170 +1,141 @@
-# Speakerpool Web Application
+# Sprekerpool - Speaker Management Application
 
-A comprehensive dashboard for managing and exploring a pool of speakers for events and presentations.
-
-## Overview
-
-The Speakerpool Web Application is a static web dashboard that provides an intuitive interface for exploring speaker data. It allows users to view statistics about the speaker pool, search for speakers based on various criteria, and access detailed information about individual speakers.
+A modern, modular single-page web application for managing and presenting a pool of speakers. This application provides a comprehensive dashboard with visualizations, advanced search capabilities, and speaker management features.
 
 ## Features
 
-### Dashboard Overview
-- Total speaker count with internal/external availability breakdown
-- Company distribution visualization (pie chart)
-- Language distribution visualization (pie chart)
-- Interactive topic tag cloud with speaker information on hover
+### Dashboard
+- Total speakers statistics with breakdown by availability
+- Interactive company distribution chart
+- Languages distribution visualization
+- Topics tag cloud with frequency-based sizing
+- Raw data preview toggle
 
-### External Data Source Support
-- Load data from external sources using the `parDataFile` URL parameter
-- Session persistence for the data source across page navigation
-- Example: `index.html?parDataFile=https://example.com/data/speakers.json`
+### Search Functionality
+- Multi-criteria search capabilities
+- Filter by general text, topics, languages, and availability
+- Interactive results with speaker cards
+- Click on dashboard elements to filter search results
 
-### Speaker Details
-- Comprehensive speaker profiles
-- Contact information and biography
-- Topics and presentation history
-- Language capabilities and availability status
+### Speaker Management
+- Complete speaker details view
+- Edit speaker information
+- Add new companies and languages
+- Update speaker availability, topics, and bio
 
-### Advanced Search
-- Filter by languages (multiple selection)
-- Filter by internal/external availability
-- Search by topics
-- General search across all fields
-- Results displayed in a responsive grid layout
+### Technical Features
+- Modular Single Page Application (SPA) architecture
+- Dynamic content loading with ES6 modules
+- Responsive design using Bootstrap 5
+- Interactive data visualizations with Chart.js
+- Event-driven architecture for real-time updates
 
-### Topic-Based Navigation
-- Click on topics in the tag cloud to find relevant speakers
-- View all speakers for a specific topic
-- Navigate directly to speaker details
-
-## Technical Details
-
-### Architecture
-The application is built as a static web application using vanilla JavaScript with ES modules. It follows a modular design with a well-organized directory structure:
+## Project Structure
 
 ```
-speakerpool-webapp/
-├── assets/                    # Static assets
-│   ├── css/                   # CSS files
-│   ├── js/                    # JavaScript files
-│   │   ├── components/        # UI components
-│   │   ├── core/              # Core functionality
-│   │   ├── pages/             # Page-specific scripts
-│   │   └── utils/             # Utility functions
-│   └── images/                # Image assets
-├── data/                      # Data files
-├── docs/                      # Documentation
-├── pages/                     # HTML pages
-├── templates/                 # HTML templates
-└── scripts/                   # Utility scripts
+sprekerpool-app-new/
+├── css/
+│   └── styles.css               # Custom styles
+├── data/
+│   └── sprekerpool.json         # Speaker data source
+├── js/
+│   ├── dataService.js           # Centralized data management
+│   ├── main.js                  # Application initialization
+│   ├── modules/
+│   │   ├── speakerDetailsModule.js  # Speaker details functionality
+│   │   ├── speakerEditModule.js     # Speaker editing functionality
+│   │   └── tabs/
+│   │       ├── dashboard.html       # Dashboard tab template
+│   │       ├── dashboardTab.js      # Dashboard tab logic
+│   │       ├── find.html            # Find tab template
+│   │       ├── findTab.js           # Find tab logic
+│   │       ├── speakers.html        # Speakers tab template
+│   │       ├── speakersTab.js       # Speakers tab logic
+│   │       ├── speakerDetails.html  # Speaker details modal
+│   │       └── speakerEditForm.html # Speaker edit form
+├── index.html                   # Main application entry point
+└── README.md                    # This file
 ```
-
-Key components include:
-
-- Data management (`assets/js/core/data.js`)
-- Dashboard visualization (`assets/js/pages/dashboard.js`)
-- Speaker details (`assets/js/pages/speakers.js`)
-- Search functionality (`assets/js/pages/search.js`)
-- Template management (`assets/js/core/templates.js`)
-
-For a detailed explanation of the application architecture, see the [Architecture Document](docs/ARCHITECTURE.md).
-
-### Data Processing
-The application uses a JSON data source (`data/Sprekerpool.json`) that is generated from a CSV file using a Python conversion script (`convert_csv_to_json.py`). The conversion process includes:
-
-- Field name cleaning and mapping
-- Processing languages as boolean dictionaries
-- Handling internal/external speaking preferences
-
-### Template System
-To avoid code duplication, the application implements a simple template system that:
-- Centralizes shared components like navigation
-- Automatically sets active states based on current page
-- Provides a consistent user experience across all pages
-
-### Libraries Used
-- Bootstrap 5 - For responsive layout and UI components
-- Chart.js - For data visualizations (pie charts)
-- D3.js - For the interactive tag cloud
 
 ## Getting Started
 
 ### Prerequisites
-- A modern web browser
-- A local web server (Python's built-in server works well)
+- A modern web browser (Chrome, Firefox, Edge, Safari)
+- A local web server (optional for development)
 
 ### Running the Application
 1. Clone or download this repository
-2. Navigate to the project directory
-3. Start a local web server:
+2. Open the project folder
+3. Start a local web server in the project directory:
    ```
    python -m http.server 8000
    ```
+   Or use any other local web server of your choice
 4. Open your browser and navigate to:
    ```
    http://localhost:8000
    ```
 
-## Data Structure
+### Using the Application
+- **Dashboard**: View statistics and visualizations of speaker data
+- **Find**: Search and filter speakers based on various criteria
+- **Speakers**: View all speakers in a sortable table format
+- **Speaker Details**: Click "View Details" on any speaker to see complete information
+- **Edit Speaker**: Click "Edit" in the speaker details modal to modify information
 
-The speaker data is stored in JSON format with the following structure:
+## Interactive Features
 
-```json
-{
-  "id": "1",
-  "name": "John Doe",
-  "company": "Example Corp",
-  "emailadress": "john.doe@example.com",
-  "topics": "AI, Machine Learning, Data Science",
-  "bio": "Short biography...",
-  "recent_presentations": "List of recent presentations...",
-  "context": "Preferred presentation context...",
-  "languages": {
-    "English": true,
-    "Dutch": true
-  },
-  "internal": true,
-  "external": false
-}
-```
+### Dashboard Interactions
+- Click on company segments in the pie chart to see speakers from that company
+- Click on language segments to filter speakers by language
+- Click on topic tags to find speakers covering specific topics
 
-## Customization
+### Search Filters
+- Use general search to find speakers by name, company, or bio
+- Filter by specific topics
+- Select languages from the dynamically generated list
+- Filter by internal/external availability
 
-### Adding New Pages
-1. Create a new HTML file based on the existing templates
-2. Add a navigation entry in `templates/navigation.html`
-3. Create a corresponding JavaScript file if needed
+### Speaker Management
+- View detailed information about each speaker
+- Edit speaker details including adding new companies and languages
+- All changes are immediately reflected throughout the application
 
-### Modifying the Data Source
+## Technical Implementation
 
-#### Local Data
-1. Update the CSV file with new data
-2. Run the conversion script to generate a new JSON file using the field_mapping.json file:
-   ```
-   python convert_csv_to_json.py --convert
-   ```
+### Data Management
+- Centralized data service for consistent data access
+- In-memory data storage with event-based updates
+- Custom events for real-time UI updates
 
-Note: `python convert_csv_to_json.py` will create the field_mapping.json file if it doesn't exist.
+### Modular Architecture
+- ES6 modules for code organization
+- Separation of HTML templates and JavaScript logic
+- Event-driven communication between components
 
-#### External Data
-1. Host your JSON data file on an accessible server
-2. Access the application with the `parDataFile` parameter:
-   ```
-   https://your-app-url.com/pages/index.html?parDataFile=https://example.com/data/speakers.json
-   ```
-3. The external data source will be remembered throughout your browser session
+### Visualization
+- Interactive charts using Chart.js
+- Dynamic tag cloud for topic visualization
+- Responsive design for all screen sizes
 
+## Limitations and Future Enhancements
 
-## Future Enhancements
-- User authentication for managing speaker data
-- Speaker submission form
-- Advanced filtering capabilities
-- Export functionality for speaker lists
-- Calendar integration for scheduling
+### Current Limitations
+- Client-side only application with in-memory data storage
+- Changes are lost on page refresh
+- Limited data validation
+
+### Potential Enhancements
+- Backend integration for persistent data storage
+- User authentication and role-based access
+- Advanced filtering and sorting options
+- Export functionality for speaker data
+- Batch operations for managing multiple speakers
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
-- Bootstrap team for the responsive UI framework
-- Chart.js and D3.js teams for the visualization libraries
+- Bootstrap for the responsive UI framework
+- Chart.js for data visualizations
+- All contributors to this project

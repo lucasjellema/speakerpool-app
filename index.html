@@ -3,75 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speakerpool Dashboard</title>
-    <meta http-equiv="refresh" content="0;url=pages/index.html">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 50px;
-            line-height: 1.6;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        h1 {
-            color: #0d6efd;
-        }
-        a {
-            color: #0d6efd;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-    </style>
+    <title>Speaker Pool Application</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Speakerpool Dashboard</h1>
-        <p>Redirecting to the dashboard...</p>
-        <p>If you are not redirected automatically, <a href="pages/index.html">click here</a>.</p>
-    </div>
-</body>
+    <div class="container mt-4">
+        <header class="mb-4">
+            <h1>Conclusion Speaker Pool Management</h1>
+        </header>
 
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Speakers per Company</h5>
-                        <div class="chart-container" style="position: relative; height: 300px;">
-                            <canvas id="company-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Languages</h5>
-                        <div class="chart-container" style="position: relative; height: 300px;">
-                            <canvas id="language-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab" aria-controls="dashboard" aria-selected="true">Dashboard</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="find-tab" data-bs-toggle="tab" data-bs-target="#find" type="button" role="tab" aria-controls="find" aria-selected="false">Find</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="speakers-tab" data-bs-toggle="tab" data-bs-target="#speakers" type="button" role="tab" aria-controls="speakers" aria-selected="false">Speakers</button>
+            </li>
+        </ul>
 
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Topics Tag Cloud</h5>
-                        <div id="topics-cloud" class="tag-cloud"></div>
-                    </div>
-                </div>
+        <!-- Tab Content -->
+        <div class="tab-content" id="myTabContent">
+            <div class="tab-pane fade show active" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
+                <!-- Dashboard content will be loaded here -->
+                <div id="dashboard-content"></div>
+            </div>
+            <div class="tab-pane fade" id="find" role="tabpanel" aria-labelledby="find-tab">
+                <!-- Find content will be loaded here -->
+                <div id="find-content"></div>
+            </div>
+            <div class="tab-pane fade" id="speakers" role="tabpanel" aria-labelledby="speakers-tab">
+                <!-- Speakers content will be loaded here -->
+                <div id="speakers-content"></div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script type="module" src="app.js"></script>
+    <footer class="container mt-5">
+        <hr>
+        <p class="text-center">&copy; 2025 Conclusion Speaker Pool Application</p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-cloud@1.2.5/build/d3.layout.cloud.min.js"></script>
+    <script src="js/dataService.js" type="module"></script>
+    <script src="js/main.js" type="module"></script>
 </body>
 </html>

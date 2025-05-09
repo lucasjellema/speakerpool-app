@@ -1,0 +1,224 @@
+[
+    {
+        "id": "1",
+        "start_time": "3-27-25 10:47:06",
+        "completion_time": "3-27-25 11:00:56",
+        "email": "anonymous",
+        "name": "Alex Morgan",
+        "last_modified_time": "",
+        "company": "TechNova Solutions",
+        "emailadress": "alex.morgan@technova.example",
+        "topics": "AI, Software Architecture, Innovation",
+        "bio": "Alex Morgan is an experienced software architect and developer who has been active in various roles and industries in IT since 2006. Working at TechNova Solutions, Alex is known for a passion for innovation and technological advancement. On the TechNova Tech Blog, Alex covers diverse topics such as AI, integration challenges, cloud computing, and software architecture. Recently focusing strongly on artificial intelligence and language models, Alex stays on top of the latest technology trends. Alex enjoys sharing knowledge through workshops, presentations, and blogs.",
+        "recent_presentations": "Recent presentations include technical challenges in AI implementation, custom AI solutions, and open source technologies. For more information, visit our company blog.",
+        "context": "Technical conferences, interactive, in person or online. Preferably informal.",
+        "languages": {
+            "English": true,
+            "Spanish": true
+        },
+        "internal": true,
+        "external": true
+    },
+    {
+        "id": "2",
+        "start_time": "3-27-25 13:22:09",
+        "completion_time": "3-27-25 13:31:32",
+        "email": "anonymous",
+        "name": "Jordan Taylor",
+        "last_modified_time": "",
+        "company": "CodeCraft Inc.",
+        "emailadress": "jordan@codecraft.example",
+        "topics": "Java, Solution Architecture, Scalability and Performance",
+        "bio": "Jordan's interest in Computer Science was sparked at an early age, leading to participation in the Computer Science Olympiad during high school. The choice to study Technical Computer Science at Pacific University was a natural one. There, Jordan worked with fellow students on a successful real-life project, which led to the founding of CodeCraft Inc. in 2004. In recent years, Jordan has primarily taken on the role of software architect, with a special focus on allowing architecture to grow in an agile manner. Despite this focus, Jordan still enjoys programming due to a passion for the craft. Topics like high-performance applications and evolutionary architecture discussions make Jordan's heart beat faster. Besides projects for national and international players, Jordan is also conducting academic research on 'performance in services architecture'.",
+        "recent_presentations": "* Green coding at CodeCraft\n* DDD reference architecture\n* Space based architecture\n* Everything you don't want to know about data consistency\n* Java performance",
+        "context": "Technical conferences and meetups",
+        "languages": {
+            "English": true,
+            "French": true
+        },
+        "internal": true,
+        "external": true
+    },
+    {
+        "id": "3",
+        "start_time": "3-27-25 13:36:24",
+        "completion_time": "3-27-25 13:38:47",
+        "email": "anonymous",
+        "name": "Sam Rivera",
+        "last_modified_time": "",
+        "company": "Quantum Dynamics",
+        "emailadress": "sam.rivera@quantum.example",
+        "topics": "Quantum Computing, AI Ethics, Future of Technology",
+        "bio": "Sam Rivera is a technology futurist and quantum computing specialist at Quantum Dynamics. With over 15 years of experience in advanced computing paradigms, Sam has led numerous research initiatives exploring the intersection of quantum mechanics and artificial intelligence. A graduate of MIT with a PhD in Quantum Information Science, Sam regularly speaks at international conferences about the ethical implications of emerging technologies.",
+        "recent_presentations": "* Quantum Computing for Business Leaders\n* Ethical Frameworks for AI Development\n* The Next Decade in Computing\n* Quantum Algorithms for Machine Learning",
+        "context": "Both formal conferences and informal meetups, preferably in-person but comfortable with virtual presentations as well.",
+        "languages": {
+            "English": true,
+            "Portuguese": true
+        },
+        "internal": true,
+        "external": true
+    },
+    {
+        "id": "4",
+        "start_time": "3-27-25 13:39:37",
+        "completion_time": "3-27-25 14:03:00",
+        "email": "anonymous",
+        "name": "Robin Chen",
+        "last_modified_time": "",
+        "company": "DataSphere Analytics",
+        "emailadress": "robin.chen@datasphere.example",
+        "topics": "Data Science, Machine Learning, Big Data Architecture",
+        "bio": "Robin Chen is a data science leader with a background in statistical modeling and machine learning applications. At DataSphere Analytics, Robin leads a team of data scientists working on predictive analytics solutions for various industries. Before joining DataSphere, Robin worked at several Fortune 500 companies implementing data-driven decision-making frameworks. Robin holds a Master's in Applied Mathematics and is currently pursuing research in reinforcement learning techniques.",
+        "recent_presentations": "* From Data to Decisions: The ML Pipeline\n* Scaling Data Science in the Enterprise\n* Ethical Considerations in Predictive Analytics\n* Real-time Analytics Architecture",
+        "context": "Prefers interactive workshops where participants can engage with concepts hands-on. Comfortable in both academic and industry settings.",
+        "languages": {
+            "English": true,
+            "Mandarin": true
+        },
+        "internal": true,
+        "external": false
+    },
+    {
+        "id": "5",
+        "start_time": "3-28-25 8:15:24",
+        "completion_time": "3-28-25 8:22:31",
+        "email": "anonymous",
+        "name": "Taylor Johnson",
+        "last_modified_time": "",
+        "company": "CloudForge Systems",
+        "emailadress": "taylor.j@cloudforge.example",
+        "topics": "Cloud Architecture, DevOps, Infrastructure as Code",
+        "bio": "Taylor Johnson is a cloud infrastructure architect at CloudForge Systems with expertise in multi-cloud environments and infrastructure automation. Taylor has helped dozens of organizations migrate legacy systems to cloud-native architectures and implement CI/CD pipelines. Known for practical, cost-effective solutions, Taylor combines technical depth with business acumen to deliver value-driven cloud transformations.",
+        "recent_presentations": "* Multi-Cloud Strategy: Beyond the Hype\n* Infrastructure as Code: Patterns and Anti-patterns\n* DevOps Culture: People Over Tools\n* Cost Optimization in Cloud Environments",
+        "context": "Prefers medium-sized groups where discussion is possible. Enjoys both technical deep-dives and executive-level strategic presentations.",
+        "languages": {
+            "English": true,
+            "German": true
+        },
+        "internal": false,
+        "external": true
+    },
+    {
+        "id": "6",
+        "start_time": "3-28-25 8:23:26",
+        "completion_time": "3-28-25 8:38:22",
+        "email": "anonymous",
+        "name": "Casey Wilson",
+        "last_modified_time": "",
+        "company": "SecureNet Defenders",
+        "emailadress": "casey@securenet.example",
+        "topics": "Cybersecurity, Ethical Hacking, Security Architecture",
+        "bio": "Casey Wilson is a cybersecurity expert and certified ethical hacker at SecureNet Defenders. With a background in both offensive and defensive security practices, Casey has helped organizations identify and remediate critical vulnerabilities before they could be exploited. A regular contributor to security conferences and CTF competitions, Casey is passionate about building security awareness and creating robust security architectures that don't impede business operations.",
+        "recent_presentations": "* Modern Attack Vectors and Defense Strategies\n* Building a Security-First Culture\n* Practical Threat Modeling for Development Teams\n* Zero Trust Architecture Implementation",
+        "context": "Enjoys interactive demonstrations and workshops. Can adapt content from beginner to advanced levels depending on audience.",
+        "languages": {
+            "English": true,
+            "Italian": true
+        },
+        "internal": true,
+        "external": true
+    },
+    {
+        "id": "7",
+        "start_time": "3-28-25 9:13:26",
+        "completion_time": "3-28-25 9:31:00",
+        "email": "anonymous",
+        "name": "Morgan Lee",
+        "last_modified_time": "",
+        "company": "UX Visionaries",
+        "emailadress": "morgan.lee@uxv.example",
+        "topics": "User Experience Design, Design Systems, Accessibility",
+        "bio": "Morgan Lee is a UX design leader at UX Visionaries with over a decade of experience creating intuitive digital experiences. Morgan specializes in designing accessible interfaces that work for users of all abilities. Having worked on products used by millions of people, Morgan brings a user-centered approach to every project, combining research insights with creative problem-solving. Morgan holds certifications in accessibility standards and regularly advocates for inclusive design practices.",
+        "recent_presentations": "* Designing for Everyone: Accessibility as Innovation\n* Research-Driven UX: Beyond Assumptions\n* Building Scalable Design Systems\n* The Business Case for Good UX",
+        "context": "Prefers workshops and interactive sessions where design thinking can be applied to real problems. Comfortable speaking to both design teams and cross-functional groups.",
+        "languages": {
+            "English": true,
+            "Korean": true
+        },
+        "internal": true,
+        "external": true
+    },
+    {
+        "id": "8",
+        "start_time": "3-28-25 10:14:26",
+        "completion_time": "3-28-25 10:30:12",
+        "email": "anonymous",
+        "name": "Jamie Rodriguez",
+        "last_modified_time": "",
+        "company": "BlockMatrix Innovations",
+        "emailadress": "jamie.r@blockmatrix.example",
+        "topics": "Blockchain Technology, Smart Contracts, Decentralized Applications",
+        "bio": "Jamie Rodriguez is a blockchain architect and developer at BlockMatrix Innovations, specializing in enterprise blockchain solutions and decentralized applications. With experience implementing blockchain technologies across finance, supply chain, and healthcare sectors, Jamie brings practical insights into how distributed ledger technology can solve real business problems. Jamie has contributed to several open-source blockchain projects and regularly speaks about the practical applications of blockchain beyond cryptocurrency.",
+        "recent_presentations": "* Enterprise Blockchain: Beyond the Hype\n* Smart Contract Security Best Practices\n* Designing Decentralized Systems\n* Blockchain Interoperability Challenges",
+        "context": "Enjoys both technical presentations for developers and strategic overviews for business audiences. Prefers interactive Q&A sessions.",
+        "languages": {
+            "English": true,
+            "Spanish": true
+        },
+        "internal": false,
+        "external": true
+    },
+    {
+        "id": "9",
+        "start_time": "3-28-25 12:22:26",
+        "completion_time": "3-28-25 13:00:50",
+        "email": "anonymous",
+        "name": "Riley Thompson",
+        "last_modified_time": "",
+        "company": "EthicalAI Collective",
+        "emailadress": "riley.t@ethicalai.example",
+        "topics": "Responsible AI, Privacy, AI Risk Management, AI Governance, Privacy Governance, AI Ethics",
+        "bio": "Riley Thompson is an advisor in the field of responsible AI and privacy (certified in AI Governance, Privacy, and Ethics) with experience in a wide variety of work environments, particularly in the financial, public, and transportation sectors, including roles as a Privacy Officer and strategic consultant. Riley is a good conversation partner at strategic and tactical levels, substantively involved and with great empathic ability. Riley stands for a customer-oriented approach and is able to involve their team and environment; they operate at the intersection of business, IT, and law and effectively use their knowledge and skills in the field of both advisory and stakeholder management.",
+        "recent_presentations": "I have given training sessions on the following topics:\n- Privacy & data-driven work, about GDPR and its impact on data warehousing and business intelligence\n- Responsible AI / AI ethics\n- The European AI Act\nSee our company blog for articles on these topics.",
+        "context": "On location / in-person, interactive with small groups, or more broadcast-oriented for large groups. Prefer not to do webinars or other online events.",
+        "languages": {
+            "English": true,
+            "Dutch": true
+        },
+        "internal": true,
+        "external": true
+    },
+    {
+        "id": "10",
+        "start_time": "3-31-25 11:08:49",
+        "completion_time": "3-31-25 11:19:43",
+        "email": "anonymous",
+        "name": "Alex Patel",
+        "last_modified_time": "",
+        "company": "MediaTech Enablers",
+        "emailadress": "alex.patel@mediatech.example",
+        "topics": "Media & Technology, Digital Transformation, Content Innovation",
+        "bio": "In addition to my professional life, I have hobbies organizing events and media-related activities, such as presenting, interviewing, and editing texts for media publication.",
+        "recent_presentations": "Product and IT presentations at trade shows and other venues. Presenter, debate moderator. (Will check for decks and articles)",
+        "context": "Formal (or not), interactive, brief, online doesn't matter much to me. I can speak anywhere.",
+        "languages": {
+            "English": true,
+            "German": true,
+            "Hindi": true
+        },
+        "internal": true,
+        "external": true
+    },
+    {
+        "id": "11",
+        "start_time": "3-31-25 15:54:10",
+        "completion_time": "3-31-25 16:14:17",
+        "email": "anonymous",
+        "name": "Jordan Smith",
+        "last_modified_time": "",
+        "company": "FutureTech Ventures",
+        "emailadress": "jordan.smith@futuretech.example",
+        "topics": "Emerging Technologies, Digital Innovation, Technology Strategy",
+        "bio": "Jordan Smith is an innovation strategist at FutureTech Ventures, helping organizations navigate digital transformation and emerging technology adoption. With a background spanning both technical implementation and strategic planning, Jordan brings a holistic perspective to technology initiatives. Jordan regularly conducts workshops on technology trend analysis and innovation frameworks.",
+        "recent_presentations": "* The Next Wave of Digital Transformation\n* Emerging Tech Radar: What's on the Horizon\n* Building Innovation Capability in Traditional Organizations\n* Technology Ethics and Responsible Innovation",
+        "context": "Comfortable in both formal conference settings and informal workshops. Prefers interactive sessions but can deliver keynote-style presentations as well.",
+        "languages": {
+            "English": true,
+            "French": true,
+            "Arabic": true
+        },
+        "internal": true,
+        "external": true
+    }
+]
