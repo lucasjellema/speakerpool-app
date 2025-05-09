@@ -1,5 +1,5 @@
 // Main Application Script
-import { loadSpeakerData } from './dataService.js';
+import { loadSpeakerData, initializeParameters } from './dataService.js';
 import { loadDashboardContent } from './modules/tabs/dashboardTab.js';
 import { loadFindContent } from './modules/tabs/findTab.js';
 import { loadSpeakersContent } from './modules/tabs/speakersTab.js';
@@ -10,7 +10,10 @@ document.addEventListener('DOMContentLoaded', initializeApp);
 
 async function initializeApp() {
     try {
-        // Load speaker data first
+        // Initialize parameters from URL first - once per session
+        initializeParameters();
+        
+        // Load speaker data
         await loadSpeakerData();
         
         // Load initial tab content (dashboard is active by default)

@@ -11,6 +11,7 @@ The Sprekerpool application is built as a client-side Single Page Application (S
 3. **Event-Driven Communication**: Components communicate via custom events
 4. **Dynamic Content Loading**: HTML templates are loaded dynamically as needed
 5. **Responsive UI**: Bootstrap 5 provides responsive design capabilities
+6. **Delta-based Persistence**: Changes to speaker data can be persisted using delta files
 
 ## Application Architecture Diagram
 
@@ -48,6 +49,11 @@ graph TD
     %% External Data
     C --> I[sprekerpool.json]
     
+    %% Delta Files
+    C --> O[Delta Files]
+    O -- "Load" --> C
+    H -- "Save Changes" --> O
+    
     %% External Libraries
     J[Bootstrap 5] --> A
     K[Chart.js] --> D
@@ -62,6 +68,7 @@ graph TD
     M[URL Parameters] --> B
     M -- "sprekerId" --> G
     M -- "parDataFile" --> C
+    M -- "parDeltasFolder" --> O
     
     %% Styling
     N[styles.css] --> A
@@ -97,6 +104,7 @@ graph TD
         K
         L
         N
+        O
     end
     
     %% Styling
@@ -109,7 +117,7 @@ graph TD
     class B,C core;
     class D,E,F,G,H module;
     class D1,E1,F1,G1,H1 template;
-    class I data;
+    class I,O data;
     class J,K,L,N external;
 ```
 
@@ -121,6 +129,7 @@ This diagram shows:
 - Event communication
 - URL parameter handling
 - External resources and libraries
+- Delta file persistence mechanism
 
 
 ## Application Structure
@@ -186,21 +195,52 @@ async function initializeApp() {
 
 A centralized service that manages all data operations:
 - Loading speaker data from JSON file
+- Loading and applying delta files for specific speakers
 - Providing methods to access and filter speaker data
 - Updating speaker information
+- Saving changes to delta files when specified
 - Dispatching events when data changes
 
 ```javascript
 // Data is stored in memory
 let speakerData = [];
+let deltasFolderPAR = '';
+let dataFilePAR = '';
 
-// Data loading with URL parameter support
+// Data loading with delta file support
 export async function loadSpeakerData() {
     try {
+        // Load main speaker data
         const response = await fetch(getDataUrl());
         const data = await response.json();
         speakerData = data;
-        return data;
+        
+        // Check if we have a deltas folder specified
+        if (deltasFolderPAR) {
+            // Attempt to load the delta file for speaker ID 7215612
+            try {
+                const deltaUrl = `${deltasFolderPAR}7215612.json`;
+                const deltaResponse = await fetch(deltaUrl);
+                
+                if (deltaResponse.ok) {
+                    const deltaData = await deltaResponse.json();
+                    
+                    // Apply the delta to the speaker data
+                    if (deltaData && deltaData.id) {
+                        const speakerIndex = speakerData.findIndex(speaker => speaker.id === deltaData.id);
+                        if (speakerIndex !== -1) {
+                            speakerData[speakerIndex] = deltaData;
+                        } else {
+                            speakerData.push(deltaData);
+                        }
+                    }
+                }
+            } catch (deltaError) {
+                console.warn('Error loading delta file:', deltaError);
+            }
+        }
+        
+        return speakerData;
     } catch (error) {
         console.error('Error loading speaker data:', error);
         return [];
@@ -212,16 +252,29 @@ export function getSpeakerById(id) {
     return speakerData.find(speaker => speaker.id === id);
 }
 
-// Example of data update with event dispatch
+// Example of data update with delta file saving
 export function updateSpeaker(updatedSpeaker) {
-    // Update data
-    speakerData[index] = updatedSpeaker;
-    
-    // Notify components via custom event
-    const event = new CustomEvent('speakerDataUpdated', { 
-        detail: { speakerId: updatedSpeaker.id } 
-    });
-    document.dispatchEvent(event);
+    // Update data in memory
+    const index = speakerData.findIndex(speaker => speaker.id === updatedSpeaker.id);
+    if (index !== -1) {
+        speakerData[index] = updatedSpeaker;
+        
+        // If deltasFolderPAR is specified, save to delta file
+        if (deltasFolderPAR) {
+            const speakerJson = JSON.stringify(updatedSpeaker, null, 2);
+            const blob = new Blob([speakerJson], { type: 'application/json' });
+            saveFile(blob, '7215612.json', deltasFolderPAR);
+        }
+        
+        // Notify components via custom event
+        const event = new CustomEvent('speakerDataUpdated', { 
+            detail: { speakerId: updatedSpeaker.id } 
+        });
+        document.dispatchEvent(event);
+        
+        return true;
+    }
+    return false;
 }
 ```
 
@@ -332,9 +385,32 @@ document.addEventListener('speakerDataUpdated', (event) => {
 
 ### URL Parameter Handling
 
-The application supports URL parameters for direct access to specific content:
+The application supports URL parameters for direct access to specific content and data sources:
 
 ```javascript
+// Initialize parameters from URL
+export function initializeParameters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Get dataFile parameter
+    const dataFileParam = urlParams.get(datafileQueryParameter);
+    if (dataFileParam) {
+        dataFilePAR = dataFileParam;
+        console.log(`Initialized dataFilePAR: ${dataFilePAR}`);
+    } 
+    
+    // Get deltasFolder parameter
+    const deltasFolderParam = urlParams.get(deltasFolderQueryParameter);
+    if (deltasFolderParam) {
+        deltasFolderPAR = deltasFolderParam;
+        console.log(`Initialized deltasFolderPAR: ${deltasFolderPAR}`);
+    } else {
+        console.log('No deltasFolderPAR specified');
+    }
+    
+    return { dataFilePAR, deltasFolderPAR };
+}
+
 // Check for sprekerId parameter
 function checkForSpeakerIdParameter() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -351,17 +427,6 @@ function checkForSpeakerIdParameter() {
             }, 500);
         });
     }
-}
-
-// Get data URL based on parameters
-const getDataUrl = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const dataFileParam = urlParams.get('parDataFile');
-    
-    if (dataFileParam) {
-        return dataFileParam;
-    }
-    return localDataURL;
 }
 ```
 
@@ -478,16 +543,17 @@ Parameters from URLs are validated before use:
 
 ### Current Limitations
 
-1. **Client-Side Only**: All data is stored in memory and lost on page refresh
+1. **Primarily Client-Side**: Most data is stored in memory, with limited persistence through delta files
 2. **Limited Validation**: Basic validation without comprehensive error handling
 3. **No Authentication**: No user authentication or authorization
-4. **Limited Data Persistence**: Changes are not saved to a server
+4. **Partial Data Persistence**: Only changes to specific speakers can be persisted through delta files
 
 ### Future Architectural Improvements
 
 1. **Backend Integration**:
    - Add a RESTful API for data persistence
    - Implement proper error handling and validation
+   - Extend delta file functionality to handle all speakers
 
 2. **State Management**:
    - Introduce a more robust state management solution
@@ -504,6 +570,7 @@ Parameters from URLs are validated before use:
 5. **Enhanced URL Parameter Support**:
    - Support for more complex URL parameters
    - Deep linking to specific views and filters
+   - Improved delta file handling with dynamic speaker IDs
 
 
 ## Conclusion

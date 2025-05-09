@@ -30,6 +30,7 @@ A modern, modular single-page web application for managing and presenting a pool
 - Interactive data visualizations with Chart.js
 - Event-driven architecture for real-time updates
 - URL query parameter support for direct speaker access
+- Delta file support for persistent speaker data changes
 
 ## Project Structure
 
@@ -90,6 +91,7 @@ sprekerpool-app-new/
 ### URL Parameters
 - Use `sprekerId` query parameter to directly open a specific speaker's details (e.g., `index.html?sprekerId=123`)
 - Use `parDataFile` query parameter to specify an alternative data source
+- Use `parDeltasFolder` query parameter to specify a folder for delta files that override or extend the main data
 
 ### Dashboard Interactions
 - Click on company segments in the pie chart to see speakers from that company
@@ -113,6 +115,8 @@ sprekerpool-app-new/
 - Centralized data service for consistent data access
 - In-memory data storage with event-based updates
 - Custom events for real-time UI updates
+- Delta file support for persisting changes to external storage
+- Ability to override specific speaker data via delta files
 
 ### Modular Architecture
 - ES6 modules for code organization
@@ -127,9 +131,10 @@ sprekerpool-app-new/
 ## Limitations and Future Enhancements
 
 ### Current Limitations
-- Client-side only application with in-memory data storage
-- Changes are lost on page refresh
+- Primarily client-side application with in-memory data storage
+- Changes to most speakers are lost on page refresh unless using delta files
 - Limited data validation
+- Delta file functionality currently limited to a single speaker (ID: 7215612)
 
 ### Potential Enhancements
 - Backend integration for persistent data storage
