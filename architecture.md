@@ -67,6 +67,7 @@ graph TD
     %% URL Parameters
     M[URL Parameters] --> B
     M -- "sprekerId" --> G
+    M -- "sprekerId" --> O
     M -- "parDataFile" --> C
     M -- "parDeltasFolder" --> O
     
@@ -127,9 +128,9 @@ This diagram shows:
 - The speaker management modules
 - Data flow between components
 - Event communication
-- URL parameter handling
+- URL parameter handling with dynamic delta file selection
 - External resources and libraries
-- Delta file persistence mechanism
+- Delta file persistence mechanism with unique ID support
 
 
 ## Application Structure
@@ -195,10 +196,11 @@ async function initializeApp() {
 
 A centralized service that manages all data operations:
 - Loading speaker data from JSON file
-- Loading and applying delta files for specific speakers
-- Providing methods to access and filter speaker data
+- Loading and applying delta files for specific speakers using their unique IDs
+- Providing methods to access and filter speaker data by ID or unique ID
 - Updating speaker information
-- Saving changes to delta files when specified
+- Saving changes to delta files named after speaker's unique ID
+- Handling empty or invalid delta files gracefully
 - Dispatching events when data changes
 
 ```javascript
@@ -217,16 +219,24 @@ export async function loadSpeakerData() {
         
         // Check if we have a deltas folder specified
         if (deltasFolderPAR) {
-            // Attempt to load the delta file for speaker ID 7215612
+            // Attempt to load the delta file for the speaker ID from the URL parameter
             try {
-                const deltaUrl = `${deltasFolderPAR}7215612.json`;
+                // Use the speaker ID from the URL parameter, or default to a fallback
+                const deltaFileName = speakerIdPAR ? `${speakerIdPAR}.json` : 'speaker-delta.json';
+                const deltaUrl = `${deltasFolderPAR}${deltaFileName}`;
                 const deltaResponse = await fetch(deltaUrl);
                 
                 if (deltaResponse.ok) {
                     const deltaData = await deltaResponse.json();
                     
-                    // Apply the delta to the speaker data
-                    if (deltaData && deltaData.id) {
+                    // Check if the delta file contains an empty JSON object
+                    const isEmptyObject = Object.keys(deltaData).length === 0;
+                    
+                    if (isEmptyObject) {
+                        console.log('Delta file contains an empty JSON object, skipping processing');
+                    }
+                    // Apply the delta to the speaker data if it's not empty and has an ID
+                    else if (deltaData && deltaData.id) {
                         const speakerIndex = speakerData.findIndex(speaker => speaker.id === deltaData.id);
                         if (speakerIndex !== -1) {
                             speakerData[speakerIndex] = deltaData;
@@ -247,9 +257,14 @@ export async function loadSpeakerData() {
     }
 }
 
-// Example of data access method
+// Function to get a speaker by ID
 export function getSpeakerById(id) {
     return speakerData.find(speaker => speaker.id === id);
+}
+
+// Function to get a speaker by unique ID
+export function getSpeakerByUniqueId(uniqueId) {
+    return speakerData.find(speaker => speaker.uniqueId === uniqueId);
 }
 
 // Example of data update with delta file saving
@@ -261,9 +276,11 @@ export function updateSpeaker(updatedSpeaker) {
         
         // If deltasFolderPAR is specified, save to delta file
         if (deltasFolderPAR) {
+            // Use the speaker's uniqueId for the delta file name
+            const deltaFileName = updatedSpeaker.uniqueId ? `${updatedSpeaker.uniqueId}.json` : `${updatedSpeaker.id}.json`;
             const speakerJson = JSON.stringify(updatedSpeaker, null, 2);
             const blob = new Blob([speakerJson], { type: 'application/json' });
-            saveFile(blob, '7215612.json', deltasFolderPAR);
+            saveFile(blob, deltaFileName, deltasFolderPAR);
         }
         
         // Notify components via custom event
@@ -408,7 +425,14 @@ export function initializeParameters() {
         console.log('No deltasFolderPAR specified');
     }
     
-    return { dataFilePAR, deltasFolderPAR };
+    // Get speaker ID parameter
+    const speakerIdParam = urlParams.get(speakerIdQueryParameter);
+    if (speakerIdParam) {
+        speakerIdPAR = speakerIdParam;
+        console.log(`Initialized speakerIdPAR: ${speakerIdPAR}`);
+    }
+    
+    return { dataFilePAR, deltasFolderPAR, speakerIdPAR };
 }
 
 // Check for sprekerId parameter
@@ -546,7 +570,7 @@ Parameters from URLs are validated before use:
 1. **Primarily Client-Side**: Most data is stored in memory, with limited persistence through delta files
 2. **Limited Validation**: Basic validation without comprehensive error handling
 3. **No Authentication**: No user authentication or authorization
-4. **Partial Data Persistence**: Only changes to specific speakers can be persisted through delta files
+4. **Partial Data Persistence**: Changes to speakers can be persisted through delta files when URL parameters are properly configured
 
 ### Future Architectural Improvements
 
@@ -571,6 +595,7 @@ Parameters from URLs are validated before use:
    - Support for more complex URL parameters
    - Deep linking to specific views and filters
    - Improved delta file handling with dynamic speaker IDs
+   - Better integration between URL parameters for comprehensive functionality
 
 
 ## Conclusion

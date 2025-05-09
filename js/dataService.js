@@ -2,10 +2,30 @@
 let speakerData = [];
 let deltasFolderPAR = '';
 let dataFilePAR = '';
+let speakerIdParameter = '';
 
 const localDataURL = 'data/sprekerpool.json';
 const datafileQueryParameter = 'parDataFile';
 const deltasFolderQueryParameter = 'parDeltasFolder';
+const speakerIdQueryParameter = 'sprekerId';
+
+// Functions to get URL parameters
+export function getDataFilePAR() {
+    return dataFilePAR;
+}
+
+export function getDeltasFolderPAR() {
+    return deltasFolderPAR;
+}
+
+export function getSpeakerIdParameter() {
+    return speakerIdParameter;
+}
+
+// Function to check if a speaker is the one referenced in the URL
+export function isSpeakerInUrl(speakerId) {
+    return speakerIdParameter && speakerIdParameter === speakerId;
+}
 
 // Function to initialize parameters from URL
 export function initializeParameters() {
@@ -27,7 +47,14 @@ export function initializeParameters() {
         console.log('No deltasFolderPAR specified');
     }
     
-    return { dataFilePAR, deltasFolderPAR };
+    // Get speaker ID parameter
+    const speakerIdParam = urlParams.get(speakerIdQueryParameter);
+    if (speakerIdParam) {
+        speakerIdParameter = speakerIdParam;
+        console.log(`Initialized speakerIdParameter: ${speakerIdParameter}`);
+    }
+    
+    return { dataFilePAR, deltasFolderPAR, speakerIdParameter };
 }
 
 
@@ -44,9 +71,11 @@ export async function loadSpeakerData() {
         if (deltasFolderPAR) {
             console.log(`Deltas folder is set to: ${deltasFolderPAR}`);
             
-            // Attempt to load the delta file for speaker ID 7215612
+            // Attempt to load the delta file for the speaker ID from the query parameter
             try {
-                const deltaUrl = `${deltasFolderPAR}7215612.json`;
+                // Use the speaker ID from the URL parameter, or default to a fallback if not specified
+                const deltaFileName = speakerIdParameter ? `${speakerIdParameter}.json` : 'speaker-delta.json';
+                const deltaUrl = `${deltasFolderPAR}${deltaFileName}`;
                 console.log(`Attempting to load delta file from: ${deltaUrl}`);
                 
                 const deltaResponse = await fetch(deltaUrl);
@@ -55,8 +84,14 @@ export async function loadSpeakerData() {
                     const deltaData = await deltaResponse.json();
                     console.log('Delta file loaded successfully');
                     
-                    // Apply the delta to the speaker data
-                    if (deltaData && deltaData.id) {
+                    // Check if the delta file contains an empty JSON object
+                    const isEmptyObject = Object.keys(deltaData).length === 0;
+                    
+                    if (isEmptyObject) {
+                        console.log('Delta file contains an empty JSON object, skipping processing');
+                    }
+                    // Apply the delta to the speaker data if it's not empty and has an ID
+                    else if (deltaData && deltaData.id) {
                         // Find the index of the speaker with matching ID
                         const speakerIndex = speakerData.findIndex(speaker => speaker.id === deltaData.id);
                         
@@ -133,6 +168,11 @@ export function getSpeakerById(id) {
     return speakerData.find(speaker => speaker.id === id);
 }
 
+// Function to get a speaker by unique ID
+export function getSpeakerByUniqueId(uniqueId) {
+    return speakerData.find(speaker => speaker.uniqueId === uniqueId);
+}
+
 // Function to update a speaker's details
 export function updateSpeaker(updatedSpeaker) {
     // Find the index of the speaker in the array
@@ -144,9 +184,9 @@ export function updateSpeaker(updatedSpeaker) {
         
         // If deltasFolderPAR is specified, save the updated speaker to the delta file
         if (deltasFolderPAR) {
-            // For this example, we're using a fixed ID (7215612) for the delta file
-            // In a real application, you might want to use the speaker's actual ID
-            const deltaUrl = `${deltasFolderPAR}7215612.json`;
+            // Use the speaker's uniqueId for the delta file name, or fall back to the regular ID
+            const deltaFileName = updatedSpeaker.uniqueId ? `${updatedSpeaker.uniqueId}.json` : `${updatedSpeaker.id}.json`;
+            const deltaUrl = `${deltasFolderPAR}${deltaFileName}`;
             console.log(`Saving updated speaker to delta file: ${deltaUrl}`);
             
             // Convert the speaker object to JSON
@@ -154,7 +194,7 @@ export function updateSpeaker(updatedSpeaker) {
             const blob = new Blob([speakerJson], { type: 'application/json' });
             
             // Save the file using the saveFile function
-            saveFile(blob, '7215612.json', deltasFolderPAR)
+            saveFile(blob, deltaFileName, deltasFolderPAR)
                 .then(() => console.log('Speaker delta saved successfully to remote endpoint'))
                 .catch(error => console.error('Error saving speaker delta:', error));
         }

@@ -1,5 +1,5 @@
 // Speaker Details Module
-import { getAllSpeakers, getSpeakerById } from '../dataService.js';
+import { getAllSpeakers, getSpeakerById, getSpeakerByUniqueId, isSpeakerInUrl } from '../dataService.js';
 import { initializeSpeakerEdit, editSpeaker } from './speakerEditModule.js';
 
 // Variable to store the modal instance
@@ -72,9 +72,27 @@ function showSpeakerDetails(speakerId) {
     // Populate the modal with speaker details
     populateSpeakerDetails(speaker);
     
+    // Control visibility of edit button based on URL parameter
+    controlEditButtonVisibility(speaker);
+    
     // Show the modal
     if (speakerDetailsModal) {
         speakerDetailsModal.show();
+    }
+}
+
+// Function to control the visibility of the edit button
+function controlEditButtonVisibility(speaker) {
+    const editButton = document.getElementById('edit-speaker-btn');
+    if (!editButton) return;
+    
+    // Check if this speaker is the one referenced in the URL using the centralized function
+    if (isSpeakerInUrl(speaker.uniqueId)) {
+        console.log(`Showing edit button for speaker: ${speaker.name} (matches URL parameter)`);
+        editButton.style.display = 'inline-block';
+    } else {
+        console.log(`Hiding edit button for speaker: ${speaker.name} (doesn't match URL parameter)`);
+        editButton.style.display = 'none';
     }
 }
 

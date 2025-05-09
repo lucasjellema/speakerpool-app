@@ -1,5 +1,5 @@
 // Main Application Script
-import { loadSpeakerData, initializeParameters } from './dataService.js';
+import { loadSpeakerData, initializeParameters, getSpeakerByUniqueId, getSpeakerIdParameter } from './dataService.js';
 import { loadDashboardContent } from './modules/tabs/dashboardTab.js';
 import { loadFindContent } from './modules/tabs/findTab.js';
 import { loadSpeakersContent } from './modules/tabs/speakersTab.js';
@@ -57,11 +57,22 @@ function initializeTabEventListeners() {
 
 // Function to check for sprekerId query parameter and show speaker details if present
 function checkForSpeakerIdParameter() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sprekerId = urlParams.get('sprekerId');
+    // Get speaker ID from the centralized data service
+    const sprekerId = getSpeakerIdParameter();
     
     if (sprekerId) {
         console.log(`Speaker ID found in URL: ${sprekerId}`);
+        
+        // Get the speaker by unique ID
+        const speaker = getSpeakerByUniqueId(sprekerId);
+        
+        // If speaker not found by unique ID, log a message
+        if (!speaker) {
+            console.warn(`No speaker found with unique ID: ${sprekerId}`);
+            return;
+        }
+        
+        console.log(`Found speaker: ${speaker.name} with unique ID: ${sprekerId}`);
         
         // If speakers tab isn't active, activate it
         if (!document.getElementById('speakers-tab').classList.contains('active')) {
@@ -73,12 +84,12 @@ function checkForSpeakerIdParameter() {
                 
                 // Show speaker details after a short delay to ensure content is loaded
                 setTimeout(() => {
-                    showSpeakerDetails(sprekerId);
+                    showSpeakerDetails(speaker.id);
                 }, 500);
             });
         } else {
             // If speakers tab is already active, just show the speaker details
-            showSpeakerDetails(sprekerId);
+            showSpeakerDetails(speaker.id);
         }
     }
 }

@@ -89,9 +89,10 @@ sprekerpool-app-new/
 ## Interactive Features
 
 ### URL Parameters
-- Use `sprekerId` query parameter to directly open a specific speaker's details (e.g., `index.html?sprekerId=123`)
+- Use `sprekerId` query parameter to directly open a specific speaker's details using their unique ID (e.g., `index.html?sprekerId=4507a8c8ba58450`)
 - Use `parDataFile` query parameter to specify an alternative data source
 - Use `parDeltasFolder` query parameter to specify a folder for delta files that override or extend the main data
+- When both `sprekerId` and `parDeltasFolder` are specified, the application will try to load a delta file named `[sprekerId].json`
 
 ### Dashboard Interactions
 - Click on company segments in the pie chart to see speakers from that company
@@ -117,6 +118,8 @@ sprekerpool-app-new/
 - Custom events for real-time UI updates
 - Delta file support for persisting changes to external storage
 - Ability to override specific speaker data via delta files
+- Dynamic delta file naming based on speaker's unique ID
+- Smart handling of empty or invalid delta files
 
 ### Modular Architecture
 - ES6 modules for code organization
@@ -134,7 +137,7 @@ sprekerpool-app-new/
 - Primarily client-side application with in-memory data storage
 - Changes to most speakers are lost on page refresh unless using delta files
 - Limited data validation
-- Delta file functionality currently limited to a single speaker (ID: 7215612)
+- Delta file functionality requires proper URL parameters to be set
 
 ### Potential Enhancements
 - Backend integration for persistent data storage
