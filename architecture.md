@@ -12,6 +12,117 @@ The Sprekerpool application is built as a client-side Single Page Application (S
 4. **Dynamic Content Loading**: HTML templates are loaded dynamically as needed
 5. **Responsive UI**: Bootstrap 5 provides responsive design capabilities
 
+## Application Architecture Diagram
+
+The following diagram illustrates the structure and component relationships of the Sprekerpool application:
+
+```mermaid
+graph TD
+    %% Main Components
+    A[index.html] --> B[main.js]
+    B --> C[dataService.js]
+    
+    %% Tab Modules
+    B --> D[dashboardTab.js]
+    B --> E[findTab.js]
+    B --> F[speakersTab.js]
+    
+    %% Speaker Modules
+    B --> G[speakerDetailsModule.js]
+    G --> H[speakerEditModule.js]
+    
+    %% Data Flow
+    C --> D
+    C --> E
+    C --> F
+    C --> G
+    C --> H
+    
+    %% HTML Templates
+    D --> D1[dashboard.html]
+    E --> E1[find.html]
+    F --> F1[speakers.html]
+    G --> G1[speakerDetails.html]
+    H --> H1[speakerEditForm.html]
+    
+    %% External Data
+    C --> I[sprekerpool.json]
+    
+    %% External Libraries
+    J[Bootstrap 5] --> A
+    K[Chart.js] --> D
+    L[D3.js] --> D
+    
+    %% Event Flow
+    C -- "Events" --> G
+    H -- "Events" --> C
+    F -- "Events" --> G
+    
+    %% URL Parameters
+    M[URL Parameters] --> B
+    M -- "sprekerId" --> G
+    M -- "parDataFile" --> C
+    
+    %% Styling
+    N[styles.css] --> A
+    
+    %% Subgraph for Modules
+    subgraph "Core Application"
+        B
+        C
+    end
+    
+    subgraph "Tab Modules"
+        D
+        E
+        F
+    end
+    
+    subgraph "Speaker Management"
+        G
+        H
+    end
+    
+    subgraph "Templates"
+        D1
+        E1
+        F1
+        G1
+        H1
+    end
+    
+    subgraph "External Resources"
+        I
+        J
+        K
+        L
+        N
+    end
+    
+    %% Styling
+    classDef core fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef module fill:#bbf,stroke:#333,stroke-width:1px;
+    classDef template fill:#dfd,stroke:#333,stroke-width:1px;
+    classDef data fill:#fdd,stroke:#333,stroke-width:1px;
+    classDef external fill:#ddd,stroke:#333,stroke-width:1px;
+    
+    class B,C core;
+    class D,E,F,G,H module;
+    class D1,E1,F1,G1,H1 template;
+    class I data;
+    class J,K,L,N external;
+```
+
+This diagram shows:
+- The core application components (main.js and dataService.js)
+- The tab modules and their HTML templates
+- The speaker management modules
+- Data flow between components
+- Event communication
+- URL parameter handling
+- External resources and libraries
+
+
 ## Application Structure
 
 ```
@@ -394,115 +505,6 @@ Parameters from URLs are validated before use:
    - Support for more complex URL parameters
    - Deep linking to specific views and filters
 
-## Application Architecture Diagram
-
-The following diagram illustrates the structure and component relationships of the Sprekerpool application:
-
-```mermaid
-graph TD
-    %% Main Components
-    A[index.html] --> B[main.js]
-    B --> C[dataService.js]
-    
-    %% Tab Modules
-    B --> D[dashboardTab.js]
-    B --> E[findTab.js]
-    B --> F[speakersTab.js]
-    
-    %% Speaker Modules
-    B --> G[speakerDetailsModule.js]
-    G --> H[speakerEditModule.js]
-    
-    %% Data Flow
-    C --> D
-    C --> E
-    C --> F
-    C --> G
-    C --> H
-    
-    %% HTML Templates
-    D --> D1[dashboard.html]
-    E --> E1[find.html]
-    F --> F1[speakers.html]
-    G --> G1[speakerDetails.html]
-    H --> H1[speakerEditForm.html]
-    
-    %% External Data
-    C --> I[sprekerpool.json]
-    
-    %% External Libraries
-    J[Bootstrap 5] --> A
-    K[Chart.js] --> D
-    L[D3.js] --> D
-    
-    %% Event Flow
-    C -- "Events" --> G
-    H -- "Events" --> C
-    F -- "Events" --> G
-    
-    %% URL Parameters
-    M[URL Parameters] --> B
-    M -- "sprekerId" --> G
-    M -- "parDataFile" --> C
-    
-    %% Styling
-    N[styles.css] --> A
-    
-    %% Subgraph for Modules
-    subgraph "Core Application"
-        B
-        C
-    end
-    
-    subgraph "Tab Modules"
-        D
-        E
-        F
-    end
-    
-    subgraph "Speaker Management"
-        G
-        H
-    end
-    
-    subgraph "Templates"
-        D1
-        E1
-        F1
-        G1
-        H1
-    end
-    
-    subgraph "External Resources"
-        I
-        J
-        K
-        L
-        N
-    end
-    
-    %% Styling
-    classDef core fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef module fill:#bbf,stroke:#333,stroke-width:1px;
-    classDef template fill:#dfd,stroke:#333,stroke-width:1px;
-    classDef data fill:#fdd,stroke:#333,stroke-width:1px;
-    classDef external fill:#ddd,stroke:#333,stroke-width:1px;
-    
-    class B,C core;
-    class D,E,F,G,H module;
-    class D1,E1,F1,G1,H1 template;
-    class I data;
-    class J,K,L,N external;
-```
-
-This diagram shows:
-- The core application components (main.js and dataService.js)
-- The tab modules and their HTML templates
-- The speaker management modules
-- Data flow between components
-- Event communication
-- URL parameter handling
-- External resources and libraries
 
 ## Conclusion
 
