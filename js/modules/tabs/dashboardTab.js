@@ -20,7 +20,6 @@ async function loadDashboardContent() {
         createCompanyChart(speakers);
         createLanguagesChart(speakers);
         createTopicsCloud(speakers);
-        displayRawData(speakers);
         
         // Set up event listeners
         initializeEventListeners();
@@ -263,27 +262,13 @@ function createTopicsCloud(speakers) {
     cloudContainer.appendChild(cloudDiv);
 }
 
-// Function to display raw speaker data
-function displayRawData(speakers) {
-    const textArea = document.getElementById('dashboard-data');
-    if (textArea) {
-        // Display first 3 speakers only
-        const previewSpeakers = speakers.slice(0, 3);
-        textArea.value = JSON.stringify(previewSpeakers, null, 2);
-    }
-}
+// Note: Raw data display function has been removed
 
 // Function to initialize event listeners
 function initializeEventListeners() {
-    const toggleButton = document.getElementById('toggle-raw-data');
-    const rawDataContainer = document.getElementById('raw-data-container');
+    // Note: Raw data toggle functionality has been removed
     
-    if (toggleButton && rawDataContainer) {
-        toggleButton.addEventListener('click', () => {
-            const isVisible = rawDataContainer.style.display !== 'none';
-            rawDataContainer.style.display = isVisible ? 'none' : 'block';
-        });
-    }
+    // Add other event listeners for dashboard components here if needed
 }
 
 // Helper function to generate random colors

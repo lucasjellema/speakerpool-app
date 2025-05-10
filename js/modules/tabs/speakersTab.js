@@ -20,9 +20,6 @@ async function loadSpeakersContent() {
         // Display speakers in the table
         displaySpeakersTable(allSpeakers);
         
-        // Display raw data in the textarea
-        displayRawData(allSpeakers);
-        
         // Initialize event listeners
         initializeEventListeners();
         
@@ -127,28 +124,11 @@ function displaySpeakersTable(speakers) {
     });
 }
 
-// Function to display raw data in the textarea
-function displayRawData(speakers) {
-    const textArea = document.getElementById('speakers-data');
-    if (textArea) {
-        // Display first 3 speakers only to avoid overwhelming the textarea
-        const previewSpeakers = speakers.slice(0, 3);
-        textArea.value = JSON.stringify(previewSpeakers, null, 2);
-    }
-}
+// Note: Raw data display function has been removed
 
 // Function to initialize event listeners
 function initializeEventListeners() {
-    // Toggle raw data button
-    const toggleButton = document.getElementById('toggle-speakers-data');
-    const rawDataContainer = document.getElementById('raw-speakers-container');
-    
-    if (toggleButton && rawDataContainer) {
-        toggleButton.addEventListener('click', () => {
-            const isVisible = rawDataContainer.style.display !== 'none';
-            rawDataContainer.style.display = isVisible ? 'none' : 'block';
-        });
-    }
+    // Note: Raw data toggle functionality has been removed
     
     // Add event listeners for sortable columns
     const sortableHeaders = document.querySelectorAll('.sortable');
