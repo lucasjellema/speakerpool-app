@@ -7,6 +7,8 @@
     "convert": "node csvToJson.js"
   },
   "dependencies": {
-    "csv-parse": "^5.5.0"
+    "axios": "^1.9.0",
+    "csv-parse": "^5.5.0",
+    "node-fetch": "^3.3.2"
   }
 }
