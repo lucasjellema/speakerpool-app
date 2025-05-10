@@ -164,6 +164,7 @@ async function populateEditForm(speaker) {
     document.getElementById('edit-speaker-id').value = speaker.id;
     document.getElementById('edit-name').value = speaker.name || '';
     document.getElementById('edit-email').value = speaker.emailadress || '';
+    document.getElementById('edit-image-url').value = speaker.imageUrl || '';
     
     // Set company
     await populateCompanies(speaker.company);
@@ -281,6 +282,7 @@ function saveSpeakerChanges() {
     // Update basic information
     updatedSpeaker.name = document.getElementById('edit-name').value;
     updatedSpeaker.emailadress = document.getElementById('edit-email').value;
+    updatedSpeaker.imageUrl = document.getElementById('edit-image-url').value;
     
     // Update company
     const companySelect = document.getElementById('edit-company-select');

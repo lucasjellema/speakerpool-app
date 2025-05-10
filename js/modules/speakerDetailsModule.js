@@ -104,6 +104,30 @@ function populateSpeakerDetails(speaker) {
         nameElement.textContent = speaker.name || 'Unknown';
     }
     
+    // Set speaker image
+    const imageElement = document.getElementById('speaker-image');
+    const imagePlaceholder = document.getElementById('speaker-image-placeholder');
+    
+    if (imageElement && imagePlaceholder) {
+        if (speaker.imageUrl && speaker.imageUrl.trim()) {
+            // Show the image and hide the placeholder
+            imageElement.src = speaker.imageUrl;
+            imageElement.style.display = 'block';
+            imagePlaceholder.style.display = 'none';
+            
+            // Add error handling for the image
+            imageElement.onerror = function() {
+                // If image fails to load, show the placeholder
+                imageElement.style.display = 'none';
+                imagePlaceholder.style.display = 'flex';
+            };
+        } else {
+            // Hide the image and show the placeholder
+            imageElement.style.display = 'none';
+            imagePlaceholder.style.display = 'flex';
+        }
+    }
+    
     // Set company
     const companyElement = document.getElementById('speaker-company');
     if (companyElement) {
