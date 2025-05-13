@@ -1,5 +1,5 @@
 // Speaker Details Module
-import { getAllSpeakers, getSpeakerById, getSpeakerByUniqueId, isSpeakerInUrl } from '../dataService.js';
+import { getAllSpeakers, getSpeakerById, getSpeakerByUniqueId, isSpeakerInUrl, isInAdminMode } from '../dataService.js';
 import { initializeSpeakerEdit, editSpeaker } from './speakerEditModule.js';
 
 // Variable to store the modal instance
@@ -86,12 +86,12 @@ function controlEditButtonVisibility(speaker) {
     const editButton = document.getElementById('edit-speaker-btn');
     if (!editButton) return;
     
-    // Check if this speaker is the one referenced in the URL using the centralized function
-    if (isSpeakerInUrl(speaker.uniqueId)) {
-        console.log(`Showing edit button for speaker: ${speaker.name} (matches URL parameter)`);
+    // Show edit button if in admin mode or if this speaker is the one referenced in the URL
+    if (isInAdminMode() || isSpeakerInUrl(speaker.uniqueId)) {
+        console.log(`Showing edit button for speaker: ${speaker.name} (admin mode or matches URL parameter)`);
         editButton.style.display = 'inline-block';
     } else {
-        console.log(`Hiding edit button for speaker: ${speaker.name} (doesn't match URL parameter)`);
+        console.log(`Hiding edit button for speaker: ${speaker.name} (not in admin mode and doesn't match URL parameter)`);
         editButton.style.display = 'none';
     }
 }

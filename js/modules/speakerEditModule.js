@@ -3,7 +3,9 @@ import {
     getSpeakerById, 
     updateSpeaker, 
     getAllCompanies, 
-    getAllLanguages 
+    getAllLanguages,
+    getAllSpeakers,
+    isInAdminMode
 } from '../dataService.js';
 
 // Variable to store the modal instance
@@ -149,6 +151,12 @@ function editSpeaker(speakerId) {
         return;
     }
     
+    // Update modal title to indicate editing
+    const modalTitle = document.getElementById('speakerEditModalLabel');
+    if (modalTitle) {
+        modalTitle.textContent = 'Edit Speaker';
+    }
+    
     // Populate the form with speaker data
     populateEditForm(speaker);
     
@@ -156,6 +164,89 @@ function editSpeaker(speakerId) {
     if (speakerEditModal) {
         speakerEditModal.show();
     }
+}
+
+// Function to create a new speaker
+function createNewSpeaker() {
+    // Check if user is in admin mode
+    if (!isInAdminMode()) {
+        console.error('Cannot create new speaker: Admin mode required');
+        return;
+    }
+    
+    // Generate a new unique ID
+    const newId = generateNewSpeakerId();
+    const newUniqueId = generateUniqueId();
+    
+    // Create a new speaker object with default values
+    const newSpeaker = {
+        id: newId,
+        uniqueId: newUniqueId,
+        name: '',
+        emailadress: '',
+        company: '',
+        imageUrl: '',
+        internal: false,
+        external: false,
+        languages: {},
+        topics: '',
+        bio: '',
+        recent_presentations: '',
+        context: ''
+    };
+    
+    // Store the current speaker ID
+    currentSpeakerId = newId;
+    
+    // Update modal title to indicate creating a new speaker
+    const modalTitle = document.getElementById('speakerEditModalLabel');
+    if (modalTitle) {
+        modalTitle.textContent = 'Add New Speaker';
+    }
+    
+    // Populate the form with the new speaker data
+    populateEditForm(newSpeaker);
+    
+    // Show the modal
+    if (speakerEditModal) {
+        speakerEditModal.show();
+    }
+}
+
+// Function to generate a new unique speaker ID
+function generateNewSpeakerId() {
+    const speakers = getAllSpeakers();
+    
+    // Find the highest ID number
+    let highestId = 0;
+    speakers.forEach(speaker => {
+        // Extract the numeric part of the ID
+        const idMatch = speaker.id.match(/\d+/);
+        if (idMatch) {
+            const idNum = parseInt(idMatch[0], 10);
+            if (idNum > highestId) {
+                highestId = idNum;
+            }
+        }
+    });
+    
+    // Generate a new ID with the next number
+    return `speaker${highestId + 1}`;
+}
+
+// Function to generate a unique ID for a new speaker
+function generateUniqueId() {
+    // Generate a 15-character unique ID
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let uniqueId = '';
+    
+    // Generate 15 random characters
+    for (let i = 0; i < 15; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        uniqueId += characters.charAt(randomIndex);
+    }
+    
+    return uniqueId;
 }
 
 // Function to populate the edit form with speaker data
@@ -269,15 +360,21 @@ async function populateLanguages(speakerLanguages) {
 
 // Function to save speaker changes
 function saveSpeakerChanges() {
-    // Get the current speaker
+    // Check if we're editing an existing speaker or creating a new one
     const speaker = getSpeakerById(currentSpeakerId);
-    if (!speaker) {
-        console.error(`Speaker with ID ${currentSpeakerId} not found.`);
-        return;
+    let updatedSpeaker;
+    
+    if (speaker) {
+        // Editing an existing speaker - create a copy of the speaker object to update
+        updatedSpeaker = { ...speaker };
+    } else {
+        // Creating a new speaker
+        updatedSpeaker = {
+            id: currentSpeakerId,
+            uniqueId: generateUniqueId()
+        };
     }
     
-    // Create a copy of the speaker object to update
-    const updatedSpeaker = { ...speaker };
     
     // Update basic information
     updatedSpeaker.name = document.getElementById('edit-name').value;
@@ -331,4 +428,4 @@ function saveSpeakerChanges() {
     }
 }
 
-export { initializeSpeakerEdit, editSpeaker };
+export { initializeSpeakerEdit, editSpeaker, createNewSpeaker };

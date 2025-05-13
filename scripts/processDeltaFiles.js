@@ -13,7 +13,7 @@
  * - Run: node processDeltaFiles.js
  * 
  * Note: This script requires the axios package to be installed.
- * PRE_AUTHENTICATED_REQUEST_URL: The pre-authenticated URL for the bucket and folder that contains the file Sprekerpool.json and the deltas folder; it requires Read, Write and List privileges.
+ * PRE_AUTHENTICATED_REQUEST_URL: The pre-authenticated URL for the bucket that contains the file Sprekerpool.json and the deltas folder; it requires Read, Write and List privileges.
  */
 
 const fs = require('fs');
@@ -22,10 +22,11 @@ const axios = require('axios');
 
 // Configuration
 const PRE_AUTHENTICATED_REQUEST_URL = process.env.PRE_AUTHENTICATED_REQUEST_URL || 
-    'https://hanz.objectstorage.us-ashburn-1.oci.customer-oci.com/p/9w8hgpZUJaQC4zc/n/idtwlqf2hanz/b/laptop-extension-drive/o/';
+
+    'https://idtwlqf2hanz.objectstorage.us-ashburn-1.oci.customer-oci.com/p/YAU0Bwx6n1bMglowiGUlCQSHEBkST9bF4oQn9ctaO3ovjplivV0yudBNml0Tpv_G/n/idtwlqf2hanz/b/laptop-extension-drive/o/';
 
 const MAIN_FILE_PATH = 'conclusion-assets/Sprekerpool.json';
-const DELTAS_FOLDER = 'deltas/';
+const DELTAS_PATH = 'conclusion-assets/deltas/'; // path in bucket to deltas folder 
 
 // Main function to process delta files
 async function processDeltaFiles() {
@@ -77,7 +78,7 @@ async function processDeltaFiles() {
             // This is a placeholder - you'll need to adjust based on your actual API response
             deltaFilesList = deltaFilesResponse.data.objects;
 // the response is an array of objects with name ; the name consists of folder path and file name; we should only retain files with path "conclusion-assets/deltas/"
-            deltaFilesList = deltaFilesList.filter(file => file.name.startsWith('conclusion-assets/deltas/'));
+            deltaFilesList = deltaFilesList.filter(file => file.name.startsWith(DELTAS_PATH));
 
 
         } catch (error) {

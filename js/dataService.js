@@ -3,11 +3,13 @@ let speakerData = [];
 let deltasFolderPAR = '';
 let dataFilePAR = '';
 let speakerIdParameter = '';
+let isAdminMode = false;
 
-const localDataURL = 'data/sprekerpool.json';
+const localDataURL = 'data/Sprekerpool.json';
 const datafileQueryParameter = 'parDataFile';
 const deltasFolderQueryParameter = 'parDeltasFolder';
 const speakerIdQueryParameter = 'sprekerId';
+const adminModeQueryParameter = 'admin';
 
 // Functions to get URL parameters
 export function getDataFilePAR() {
@@ -20,6 +22,10 @@ export function getDeltasFolderPAR() {
 
 export function getSpeakerIdParameter() {
     return speakerIdParameter;
+}
+
+export function isInAdminMode() {
+    return isAdminMode;
 }
 
 // Function to check if a speaker is the one referenced in the URL
@@ -54,7 +60,17 @@ export function initializeParameters() {
         console.log(`Initialized speakerIdParameter: ${speakerIdParameter}`);
     }
     
-    return { dataFilePAR, deltasFolderPAR, speakerIdParameter };
+    // Check for admin mode
+    const adminParam = urlParams.get(adminModeQueryParameter);
+    if (adminParam && adminParam.toLowerCase() === 'yes') {
+        isAdminMode = true;
+        console.log('Admin mode enabled');
+    } else {
+        isAdminMode = false;
+        console.log('Admin mode disabled');
+    }
+    
+    return { dataFilePAR, deltasFolderPAR, speakerIdParameter, isAdminMode };
 }
 
 
@@ -133,6 +149,35 @@ const getDataUrl = () => {
     return localDataURL;
 }
 
+// Function to export all speaker data as JSON
+export function exportSpeakerData() {
+    // Convert the speaker data to a JSON string with pretty formatting
+    const speakerJson = JSON.stringify(speakerData, null, 2);
+    
+    // Create a Blob with the JSON data
+    const blob = new Blob([speakerJson], { type: 'application/json' });
+    
+    // Create a URL for the Blob
+    const url = URL.createObjectURL(blob);
+    
+    // Create a temporary link element
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'Sprekerpool.json';
+    
+    // Append the link to the body
+    document.body.appendChild(link);
+    
+    // Trigger a click on the link to start the download
+    link.click();
+    
+    // Remove the link from the document
+    document.body.removeChild(link);
+    
+    // Release the URL object
+    URL.revokeObjectURL(url);
+}
+
 const saveFile = async (blob, filename, preAuthenticatedRequestURL) => {
     const fetchOptions = {
         method: 'PUT',
@@ -200,6 +245,34 @@ export function updateSpeaker(updatedSpeaker) {
         }
         
         console.log(`Speaker ${updatedSpeaker.id} updated successfully`);
+        
+        // Dispatch a custom event to notify components that data has changed
+        const event = new CustomEvent('speakerDataUpdated', { detail: { speakerId: updatedSpeaker.id } });
+        document.dispatchEvent(event);
+        
+        return true;
+    } else {
+        // This is a new speaker - add it to the array
+        speakerData.push(updatedSpeaker);
+        
+        // If deltasFolderPAR is specified, save the updated speaker to the delta file
+        if (deltasFolderPAR) {
+            // Use the speaker's uniqueId for the delta file name, or fall back to the regular ID
+            const deltaFileName = updatedSpeaker.uniqueId ? `${updatedSpeaker.uniqueId}.json` : `${updatedSpeaker.id}.json`;
+            const deltaUrl = `${deltasFolderPAR}${deltaFileName}`;
+            console.log(`Saving new speaker to delta file: ${deltaUrl}`);
+            
+            // Convert the speaker object to JSON
+            const speakerJson = JSON.stringify(updatedSpeaker, null, 2);
+            const blob = new Blob([speakerJson], { type: 'application/json' });
+            
+            // Save the file using the saveFile function
+            saveFile(blob, deltaFileName, deltasFolderPAR)
+                .then(() => console.log('New speaker delta saved successfully to remote endpoint'))
+                .catch(error => console.error('Error saving new speaker delta:', error));
+        }
+        
+        console.log(`New speaker ${updatedSpeaker.id} added successfully`);
         
         // Dispatch a custom event to notify components that data has changed
         const event = new CustomEvent('speakerDataUpdated', { detail: { speakerId: updatedSpeaker.id } });

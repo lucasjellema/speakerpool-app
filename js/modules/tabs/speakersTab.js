@@ -1,6 +1,7 @@
 // Speakers Tab Module
-import { getAllSpeakers } from '../../dataService.js';
+import { getAllSpeakers, isInAdminMode, exportSpeakerData } from '../../dataService.js';
 import { initializeSpeakerDetails, showSpeakerDetails } from '../../modules/speakerDetailsModule.js';
+import { initializeSpeakerEdit, editSpeaker, createNewSpeaker } from '../../modules/speakerEditModule.js';
 
 // Store all speakers and current sort state
 let allSpeakers = [];
@@ -25,6 +26,15 @@ async function loadSpeakersContent() {
         
         // Initialize speaker details modal
         await initializeSpeakerDetails();
+        
+        // Show admin controls if in admin mode
+        if (isInAdminMode()) {
+            const adminControls = document.getElementById('admin-controls');
+            if (adminControls) {
+                adminControls.classList.remove('d-none');
+                console.log('Admin controls displayed');
+            }
+        }
         
     } catch (error) {
         console.error('Error loading speakers content:', error);
@@ -138,6 +148,37 @@ function initializeEventListeners() {
             sortTable(sortField);
         });
     });
+    
+    // Add event listener for the Add Speaker button
+    const addSpeakerBtn = document.getElementById('add-speaker-btn');
+    if (addSpeakerBtn) {
+        addSpeakerBtn.addEventListener('click', () => {
+            if (isInAdminMode()) {
+                createNewSpeaker();
+            } else {
+                console.warn('Add speaker attempted without admin mode');
+            }
+        });
+    }
+    
+    // Add event listener for the Download Data button
+    const downloadDataBtn = document.getElementById('download-data-btn');
+    if (downloadDataBtn) {
+        downloadDataBtn.addEventListener('click', () => {
+            if (isInAdminMode()) {
+                exportSpeakerData();
+            } else {
+                console.warn('Download attempted without admin mode');
+            }
+        });
+    }
+    
+    // Listen for speaker data updates to refresh the table
+    document.addEventListener('speakerDataUpdated', () => {
+        // Refresh the speakers list
+        allSpeakers = getAllSpeakers();
+        displaySpeakersTable(allSpeakers);
+    });
 }
 
 // Function to sort the table by the specified field
@@ -221,7 +262,6 @@ function updateSortIcons(activeField, direction) {
 
 // Function to view speaker details
 function viewSpeakerDetails(speakerId) {
-    console.log(`Viewing details for speaker ID: ${speakerId}`);
     showSpeakerDetails(speakerId);
 }
 
