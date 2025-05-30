@@ -107,6 +107,8 @@ function populateSpeakerDetails(speaker) {
     // Set speaker image
     const imageElement = document.getElementById('speaker-image');
     const imagePlaceholder = document.getElementById('speaker-image-placeholder');
+    const viewFullImageContainer = document.getElementById('view-full-image-container');
+    const viewFullImageLink = document.getElementById('view-full-image-link');
     
     if (imageElement && imagePlaceholder) {
         if (speaker.imageUrl && speaker.imageUrl.trim()) {
@@ -115,16 +117,29 @@ function populateSpeakerDetails(speaker) {
             imageElement.style.display = 'block';
             imagePlaceholder.style.display = 'none';
             
+            // Set up "View full image" link
+            if (viewFullImageContainer && viewFullImageLink) {
+                viewFullImageLink.href = speaker.imageUrl;
+                viewFullImageContainer.style.display = 'block';
+            }
+            
             // Add error handling for the image
             imageElement.onerror = function() {
                 // If image fails to load, show the placeholder
                 imageElement.style.display = 'none';
                 imagePlaceholder.style.display = 'flex';
+                
+               
             };
         } else {
             // Hide the image and show the placeholder
             imageElement.style.display = 'none';
             imagePlaceholder.style.display = 'flex';
+            
+            // Hide the "View full image" link when no image URL is provided
+            if (viewFullImageContainer) {
+                viewFullImageContainer.style.display = 'none';
+            }
         }
     }
     
