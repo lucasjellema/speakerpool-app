@@ -224,6 +224,9 @@ export function updateSpeaker(updatedSpeaker) {
     const index = speakerData.findIndex(speaker => speaker.id === updatedSpeaker.id);
     
     if (index !== -1) {
+        // Add last modified timestamp to the speaker data
+        updatedSpeaker.lastModifiedTimestamp = new Date().toISOString();
+        
         // Update the speaker data
         speakerData[index] = updatedSpeaker;
         
@@ -252,6 +255,9 @@ export function updateSpeaker(updatedSpeaker) {
         
         return true;
     } else {
+        // Add last modified timestamp to the speaker data
+        updatedSpeaker.lastModifiedTimestamp = new Date().toISOString();
+        
         // This is a new speaker - add it to the array
         speakerData.push(updatedSpeaker);
         
