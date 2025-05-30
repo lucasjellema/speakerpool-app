@@ -115,7 +115,7 @@ function populateSpeakerDetails(speaker) {
             // Show the image and hide the placeholder
             imageElement.src = speaker.imageUrl;
             imageElement.style.display = 'block';
-            imagePlaceholder.style.display = 'none';
+            imagePlaceholder.style.display = 'none !important';
             
             // Set up "View full image" link
             if (viewFullImageContainer && viewFullImageLink) {
