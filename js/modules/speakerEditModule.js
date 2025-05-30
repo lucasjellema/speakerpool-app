@@ -256,6 +256,7 @@ async function populateEditForm(speaker) {
     document.getElementById('edit-name').value = speaker.name || '';
     document.getElementById('edit-email').value = speaker.emailadress || '';
     document.getElementById('edit-image-url').value = speaker.imageUrl || '';
+    document.getElementById('edit-linkedin-url').value = speaker.linkedInURL || '';
     
     // Set company
     await populateCompanies(speaker.company);
@@ -380,6 +381,7 @@ function saveSpeakerChanges() {
     updatedSpeaker.name = document.getElementById('edit-name').value;
     updatedSpeaker.emailadress = document.getElementById('edit-email').value;
     updatedSpeaker.imageUrl = document.getElementById('edit-image-url').value;
+    updatedSpeaker.linkedInURL = document.getElementById('edit-linkedin-url').value; // Get LinkedIn URL
     
     // Update company
     const companySelect = document.getElementById('edit-company-select');

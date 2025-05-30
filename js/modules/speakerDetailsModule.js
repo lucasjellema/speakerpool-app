@@ -140,6 +140,20 @@ function populateSpeakerDetails(speaker) {
         emailElement.textContent = speaker.emailadress || 'Not provided';
     }
     
+    // Set LinkedIn URL if available
+    const linkedinContainer = document.getElementById('linkedin-container');
+    const linkedinLink = document.getElementById('speaker-linkedin');
+    if (linkedinContainer && linkedinLink) {
+        if (speaker.linkedInURL && speaker.linkedInURL.trim()) {
+            // Set the href attribute and show the container
+            linkedinLink.href = speaker.linkedInURL;
+            linkedinContainer.style.display = 'block';
+        } else {
+            // Hide the LinkedIn container if no URL is provided
+            linkedinContainer.style.display = 'none';
+        }
+    }
+    
     // Set languages
     const languagesElement = document.getElementById('speaker-languages');
     if (languagesElement) {
