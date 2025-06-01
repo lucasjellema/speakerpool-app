@@ -9,13 +9,15 @@ import { setupAuthUI , handleLogin, updateAuthUI} from './authUI.js';
 // Initialize the application when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Add MSAL login success listener
-    window.addEventListener('msalLoginSuccess', (event) => {
+    window.addEventListener('msalLoginSuccess', async (event) => {
         console.log('MSAL Login Success Event:', event.detail);
         // Update UI or perform actions after successful login
         const { account } = event.detail.payload;
         if (account) {
             console.log(`User ${account.username} logged in successfully`);
             updateAuthUI();
+            await loadSpeakerData();
+            await refreshUIwithSpeakerData();
         }
 
     });
@@ -40,22 +42,10 @@ async function initializeApp() {
         
         try {
             // Try to load speaker data (will trigger login if not authenticated)
-            await loadSpeakerData();
+       //     await loadSpeakerData();
             
             // Load initial tab content (dashboard is active by default)
-            await loadDashboardContent();
-            
-            // Set up tab event listeners
-            initializeTabEventListeners();
-            
-            // Initialize speaker details module
-            await initializeSpeakerDetails();
-            
-            // Check if sprekerId query parameter exists
-            checkForSpeakerIdParameter();
-            
-            // Update UI to show user status
-            updateAuthUI();
+         //   await refreshUIwithSpeakerData();
         } catch (error) {
             console.error('Error initializing application:', error);
             if (error.message.includes('login') || error.message.includes('authentication')) {
@@ -68,6 +58,22 @@ async function initializeApp() {
         console.error('Error initializing authentication:', error);
         alert('Error initializing authentication. Please check the console for details.');
     }
+}
+
+async function refreshUIwithSpeakerData() {
+    await loadDashboardContent();
+
+    // Set up tab event listeners
+    initializeTabEventListeners();
+
+    // Initialize speaker details module
+    await initializeSpeakerDetails();
+
+    // Check if sprekerId query parameter exists
+    checkForSpeakerIdParameter();
+
+    // Update UI to show user status
+    updateAuthUI();
 }
 
 function initializeTabEventListeners() {

@@ -1,19 +1,21 @@
-import { msalConfig, loginRequest, tokenRequest } from './authConfig.js';
+import { msalConfig, loginRequest } from './authConfig.js';
 
 // Create the main msalInstance instance
 // configuration parameters are located at authConfig.js
 export const msalInstance = new msal.PublicClientApplication(msalConfig);
-
+let idToken
+let idTokenClaims
 // Add event listener for successful login
 msalInstance.addEventCallback((message) => {
     console.log('MSAL Event:', message.eventType);
     
     if (message.eventType === 'msal:loginSuccess' || message.eventType === 'msal:acquireTokenSuccess'   ) {
         console.log('Login successful:', message);
+        idToken = message.payload.idToken;
+        idTokenClaims = message.payload.idTokenClaims;
         // You can dispatch a custom event or call a function here
         const event = new CustomEvent('msalLoginSuccess', { detail: message });
         window.dispatchEvent(event);
-        
         // Update UI if needed
         if (message.account) {
             showWelcomeMessage(message.account.username);
@@ -149,11 +151,12 @@ export function getTokenPopup(request) {
 }
 
 
-const endpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-api/speakerpool-data";
+const endpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-data";
+
 export function getToken() {
     getTokenPopup(loginRequest)
         .then(response => {
-            getDataWithToken(endpoint, response.accessToken,handleData);
+        //    getDataWithToken(endpoint, response.idToken,handleData); // use idToken - not accessToken
         }).catch(error => {
             console.error(error);
         });
@@ -165,24 +168,46 @@ const handleData = (data, endpoint) => {
     console.log('endpoint',endpoint)
 }
 
-function getDataWithToken(endpoint, token, callback) {
-    const headers = new Headers();
-    const bearer = `Bearer ${token}`;
+export async function getDataWithToken(endpoint) {
+    try {
+        if (!idToken) {
+            console.error('No ID token available. User might not be authenticated.');
+            throw new Error('Authentication required. Please sign in.');
+        }
 
-    headers.append("Authorization", bearer);
+        console.log('ID Token exists:', !!idToken);
+        
+        // Try using a plain object for headers instead of Headers()
+        const options = {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${idToken}`
+            },
+            // Add credentials if needed (for cookies, HTTP authentication)
+            // credentials: 'include',
+        };
 
-    const options = {
-        method: "GET",
-        headers: headers
-    };
-
-    console.log('request made to API at: ' + new Date().toString());
-    console.log('token',token)
-
-    fetch(endpoint, options)
-        .then(response => response.json())
-        .then(response => callback(response, endpoint))
-        .catch(error => console.log(error));
+        console.log('Request options:', JSON.stringify(options, null, 2));
+        
+        // Log the actual request being made
+        console.log('Making request to:', endpoint);
+        
+        const response = await fetch(endpoint, options);
+        
+        // Log response details for debugging
+        console.log('Response status:', response.status, response.statusText);
+        
+        // Check for 401 Unauthorized
+        if (response.status === 401) {
+            console.error('Authentication failed. Token might be invalid or expired.');
+            // You might want to trigger a token refresh or re-authentication here
+        }
+        
+        return response;
+    } catch (error) {
+        console.error('Error in getDataWithToken:', error);
+        throw error; // Re-throw to allow calling code to handle the error
+    }
 }
 
 selectAccount();

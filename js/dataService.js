@@ -1,4 +1,6 @@
+import { getDataWithToken } from './authPopup.js';
 // Data Service for Speaker Pool Application
+
 let speakerData = [];
 let deltasFolderPAR = '';
 let dataFilePAR = '';
@@ -36,14 +38,14 @@ export function isSpeakerInUrl(speakerId) {
 // Function to initialize parameters from URL
 export function initializeParameters() {
     const urlParams = new URLSearchParams(window.location.search);
-    
+
     // Get dataFile parameter
     const dataFileParam = urlParams.get(datafileQueryParameter);
     if (dataFileParam) {
         dataFilePAR = dataFileParam;
         console.log(`Initialized dataFilePAR: ${dataFilePAR}`);
-    } 
-    
+    }
+
     // Get deltasFolder parameter
     const deltasFolderParam = urlParams.get(deltasFolderQueryParameter);
     if (deltasFolderParam) {
@@ -52,14 +54,14 @@ export function initializeParameters() {
     } else {
         console.log('No deltasFolderPAR specified');
     }
-    
+
     // Get speaker ID parameter
     const speakerIdParam = urlParams.get(speakerIdQueryParameter);
     if (speakerIdParam) {
         speakerIdParameter = speakerIdParam;
         console.log(`Initialized speakerIdParameter: ${speakerIdParameter}`);
     }
-    
+
     // Check for admin mode
     const adminParam = urlParams.get(adminModeQueryParameter);
     if (adminParam && adminParam.toLowerCase() === 'yes') {
@@ -69,40 +71,65 @@ export function initializeParameters() {
         isAdminMode = false;
         console.log('Admin mode disabled');
     }
-    
+
     return { dataFilePAR, deltasFolderPAR, speakerIdParameter, isAdminMode };
 }
+
+
+const endpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-data";
 
 
 // Function to load speaker data from JSON file
 export async function loadSpeakerData() {
     try {
-        // Use dataFilePAR which was set in initializeParameters (now called from main.js)
-        console.log(`Loading speaker data from: ${getDataUrl()}`);
-        const response = await fetch(getDataUrl());
+        let response;
+        response = await getDataWithToken(endpoint)
+
+                
+        // Use dataFilePAR which was set in initializeParameters
+        // console.log(`Loading speaker data from: ${getDataUrl()}`);
+        //  response = await fetch(getDataUrl(), {
+        //     headers: {
+        //         'Authorization': `Bearer {token}`,
+        //         'Content-Type': 'application/json'
+        //     },
+        //     credentials: 'include' // Include cookies if needed
+        // });
+
+
+        if (!response.ok) {
+            throw new Error(`Failed to load data: ${response.status} ${response.statusText}`);
+        }
+
         const data = await response.json();
         speakerData = data;
-        
+
         // Check if we have a deltas folder specified
         if (deltasFolderPAR) {
             console.log(`Deltas folder is set to: ${deltasFolderPAR}`);
-            
+
             // Attempt to load the delta file for the speaker ID from the query parameter
             try {
                 // Use the speaker ID from the URL parameter, or default to a fallback if not specified
                 const deltaFileName = speakerIdParameter ? `${speakerIdParameter}.json` : 'speaker-delta.json';
                 const deltaUrl = `${deltasFolderPAR}${deltaFileName}`;
                 console.log(`Attempting to load delta file from: ${deltaUrl}`);
-                
-                const deltaResponse = await fetch(deltaUrl);
-                
+
+                //  const token = await getAccessToken();
+                const deltaResponse = await fetch(deltaUrl, {
+                    headers: {
+                        'Authorization': `Bearer {token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
                 if (deltaResponse.ok) {
                     const deltaData = await deltaResponse.json();
                     console.log('Delta file loaded successfully');
-                    
+
                     // Check if the delta file contains an empty JSON object
                     const isEmptyObject = Object.keys(deltaData).length === 0;
-                    
+
                     if (isEmptyObject) {
                         console.log('Delta file contains an empty JSON object, skipping processing');
                     }
@@ -110,7 +137,7 @@ export async function loadSpeakerData() {
                     else if (deltaData && deltaData.id) {
                         // Find the index of the speaker with matching ID
                         const speakerIndex = speakerData.findIndex(speaker => speaker.id === deltaData.id);
-                        
+
                         if (speakerIndex !== -1) {
                             // Replace the speaker data with the delta data
                             console.log(`Applying delta for speaker ID: ${deltaData.id}`);
@@ -131,7 +158,7 @@ export async function loadSpeakerData() {
                 console.warn('Error loading delta file:', deltaError);
             }
         }
-        
+
         return speakerData;
     } catch (error) {
         console.error('Error loading speaker data:', error);
@@ -142,7 +169,7 @@ export async function loadSpeakerData() {
 // This function is now replaced by initializeParameters
 // Keeping it for backward compatibility but it's not used in loadSpeakerData anymore
 const getDataUrl = () => {
-    
+
     if (dataFilePAR) {
         return dataFilePAR;
     }
@@ -153,27 +180,27 @@ const getDataUrl = () => {
 export function exportSpeakerData() {
     // Convert the speaker data to a JSON string with pretty formatting
     const speakerJson = JSON.stringify(speakerData, null, 2);
-    
+
     // Create a Blob with the JSON data
     const blob = new Blob([speakerJson], { type: 'application/json' });
-    
+
     // Create a URL for the Blob
     const url = URL.createObjectURL(blob);
-    
+
     // Create a temporary link element
     const link = document.createElement('a');
     link.href = url;
     link.download = 'Sprekerpool.json';
-    
+
     // Append the link to the body
     document.body.appendChild(link);
-    
+
     // Trigger a click on the link to start the download
     link.click();
-    
+
     // Remove the link from the document
     document.body.removeChild(link);
-    
+
     // Release the URL object
     URL.revokeObjectURL(url);
 }
@@ -222,91 +249,91 @@ export function getSpeakerByUniqueId(uniqueId) {
 export function updateSpeaker(updatedSpeaker) {
     // Find the index of the speaker in the array
     const index = speakerData.findIndex(speaker => speaker.id === updatedSpeaker.id);
-    
+
     if (index !== -1) {
         // Add last modified timestamp to the speaker data
         updatedSpeaker.lastModifiedTimestamp = new Date().toISOString();
-        
+
         // Update the speaker data
         speakerData[index] = updatedSpeaker;
-        
+
         // If deltasFolderPAR is specified, save the updated speaker to the delta file
         if (deltasFolderPAR) {
             // Use the speaker's uniqueId for the delta file name, or fall back to the regular ID
             const deltaFileName = updatedSpeaker.uniqueId ? `${updatedSpeaker.uniqueId}.json` : `${updatedSpeaker.id}.json`;
             const deltaUrl = `${deltasFolderPAR}${deltaFileName}`;
             console.log(`Saving updated speaker to delta file: ${deltaUrl}`);
-            
+
             // Convert the speaker object to JSON
             const speakerJson = JSON.stringify(updatedSpeaker, null, 2);
             const blob = new Blob([speakerJson], { type: 'application/json' });
-            
+
             // Save the file using the saveFile function
             saveFile(blob, deltaFileName, deltasFolderPAR)
                 .then(() => console.log('Speaker delta saved successfully to remote endpoint'))
                 .catch(error => console.error('Error saving speaker delta:', error));
         }
-        
+
         console.log(`Speaker ${updatedSpeaker.id} updated successfully`);
-        
+
         // Dispatch a custom event to notify components that data has changed
         const event = new CustomEvent('speakerDataUpdated', { detail: { speakerId: updatedSpeaker.id } });
         document.dispatchEvent(event);
-        
+
         return true;
     } else {
         // Add last modified timestamp to the speaker data
         updatedSpeaker.lastModifiedTimestamp = new Date().toISOString();
-        
+
         // This is a new speaker - add it to the array
         speakerData.push(updatedSpeaker);
-        
+
         // If deltasFolderPAR is specified, save the updated speaker to the delta file
         if (deltasFolderPAR) {
             // Use the speaker's uniqueId for the delta file name, or fall back to the regular ID
             const deltaFileName = updatedSpeaker.uniqueId ? `${updatedSpeaker.uniqueId}.json` : `${updatedSpeaker.id}.json`;
             const deltaUrl = `${deltasFolderPAR}${deltaFileName}`;
             console.log(`Saving new speaker to delta file: ${deltaUrl}`);
-            
+
             // Convert the speaker object to JSON
             const speakerJson = JSON.stringify(updatedSpeaker, null, 2);
             const blob = new Blob([speakerJson], { type: 'application/json' });
-            
+
             // Save the file using the saveFile function
             saveFile(blob, deltaFileName, deltasFolderPAR)
                 .then(() => console.log('New speaker delta saved successfully to remote endpoint'))
                 .catch(error => console.error('Error saving new speaker delta:', error));
         }
-        
+
         console.log(`New speaker ${updatedSpeaker.id} added successfully`);
-        
+
         // Dispatch a custom event to notify components that data has changed
         const event = new CustomEvent('speakerDataUpdated', { detail: { speakerId: updatedSpeaker.id } });
         document.dispatchEvent(event);
-        
+
         return true;
     }
-    
+
     return false;
 }
 
 // Function to get all unique companies from speaker data
 export function getAllCompanies() {
     const companies = new Set();
-    
+
     speakerData.forEach(speaker => {
         if (speaker.company) {
             companies.add(speaker.company);
         }
     });
-    
+
     return Array.from(companies).sort();
 }
 
 // Function to get all unique languages from speaker data
 export function getAllLanguages() {
     const languages = new Set();
-    
+
     speakerData.forEach(speaker => {
         if (speaker.languages) {
             Object.keys(speaker.languages).forEach(language => {
@@ -316,7 +343,7 @@ export function getAllLanguages() {
             });
         }
     });
-    
+
     return Array.from(languages).sort();
 }
 

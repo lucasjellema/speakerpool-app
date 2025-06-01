@@ -6,7 +6,7 @@
 export const msalConfig = {
     auth: {
         // 'Application (client) ID' of app registration in Azure portal - this value is a GUID
-        clientId: "a8baebb8-a694-40ce-8fc0-945fc4ca7510",
+        clientId: "0de52ab5-0a69-46b7-9ad1-db7306e2fc6e",
         // Full directory URL, in the form of https://login.microsoftonline.com/<tenant-id>
         authority: "https://login.microsoftonline.com/bf104ffd-a095-49bd-9949-d8f675a8632b",
         // Full redirect URL, in form of http://localhost:3000 or window.location.origin
@@ -48,16 +48,6 @@ export const msalConfig = {
  * https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-permissions-and-consent#openid-connect-scopes
  */
 export const loginRequest = {
-    scopes: ["User.Read"]
-};
+      scopes: ["User.Read","openid","profile"]
+}
 
-/**
- * Add here the scopes to request when obtaining an access token for registered App. For more information, see:
- * https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-browser/docs/resources-and-scopes.md
- */
-const appId = "a8baebb8-a694-40ce-8fc0-945fc4ca7510";
-
-export const tokenRequest = {
-    scopes: ["User.Read", "profile","email","api://" + appId + "/access_as_user"],
-    forceRefresh: false // Set this to "true" to skip a cached token and go to the server to get a new token
-};
