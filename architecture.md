@@ -13,6 +13,36 @@ The Sprekerpool application is built as a client-side Single Page Application (S
 5. **Responsive UI**: Bootstrap 5 provides responsive design capabilities
 6. **Delta-based Persistence**: Changes to speaker data can be persisted using delta files
 
+## Authentication Flow
+
+The application uses Microsoft Entra ID (formerly Azure AD) for authentication, implementing the following flow:
+
+1. **Initialization**:
+   - MSAL.js (Microsoft Authentication Library) is initialized with application configuration
+   - The app checks for existing authentication state in session storage
+
+2. **Login Process**:
+   - User clicks the login button, triggering the MSAL login popup
+   - User authenticates with their Microsoft credentials
+   - On successful authentication, MSAL:
+     - Receives an ID token and access token
+     - Stores the authentication state in session storage
+     - Dispatches a 'msal:loginSuccess' event
+
+3. **Token Usage**:
+   - The ID token is used to authenticate API requests to the backend
+   - Each API request includes the token in the Authorization header: `Bearer <idToken>`
+   - The token is automatically refreshed by MSAL when needed
+
+4. **Session Management**:
+   - Authentication state is maintained in session storage
+   - The application listens for token expiration and handles re-authentication
+   - Users can explicitly log out, which clears the session
+
+5. **Protected Routes**:
+   - All data-fetching operations require a valid token
+   - Unauthenticated users are automatically redirected to the login page
+
 ## Application Architecture Diagram
 
 The following diagram illustrates the structure and component relationships of the Sprekerpool application:
@@ -46,8 +76,12 @@ graph TD
     G --> G1[speakerDetails.html]
     H --> H1[speakerEditForm.html]
     
-    %% External Data
-    C --> I[sprekerpool.json]
+    %% External Services
+    C --> I[OCI API Gateway]
+    I --> |"Fetches data from"| I1[OCI Object Storage]
+    
+    %% Authentication
+    A --> |"Authenticates via"| M[MS Entra ID]
     
     %% Delta Files
     C --> O[Delta Files]
@@ -58,6 +92,10 @@ graph TD
     J[Bootstrap 5] --> A
     K[Chart.js] --> D
     L[D3.js] --> D
+    
+    %% External Services Styling
+    classDef external fill:#f9f,stroke:#333,stroke-width:2px;
+    class M,I,I1 external;
     
     %% Event Flow
     C -- "Events" --> G
