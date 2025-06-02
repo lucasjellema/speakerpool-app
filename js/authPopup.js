@@ -5,6 +5,8 @@ import { msalConfig, loginRequest } from './authConfig.js';
 export const msalInstance = new msal.PublicClientApplication(msalConfig);
 let idToken
 let idTokenClaims
+let username = "";
+
 // Add event listener for successful login
 msalInstance.addEventCallback((message) => {
     console.log('MSAL Event:', message.eventType);
@@ -13,7 +15,8 @@ msalInstance.addEventCallback((message) => {
         console.log('Login successful:', message);
         idToken = message.payload.idToken;
         idTokenClaims = message.payload.idTokenClaims;
-        // You can dispatch a custom event or call a function here
+        // This custom event that signals successful login is consumed in main.js and is used for updating the UI with user details
+        // and loading the protected JSON document with data
         const event = new CustomEvent('msalLoginSuccess', { detail: message });
         window.dispatchEvent(event);
         // Update UI if needed
@@ -23,49 +26,7 @@ msalInstance.addEventCallback((message) => {
     }
 });
 
-let username = "";
-
-/**
- * Displays account details in the console
- * @param {string} username - The username of the logged-in account
- */
-function showWelcomeMessage(username) {
-    const accounts = msalInstance.getAllAccounts();
-    const account = accounts.find(acc => acc.username === username);
-    
-    if (account) {
-        console.group('Account Details');
-        console.log('👤 Username:', account.username);
-        console.log('🏠 Home Account ID:', account.homeAccountId);
-        console.log('🏢 Tenant ID:', account.tenantId);
-        console.log('🔐 Local Account ID:', account.localAccountId);
-        
-        // Log additional claims if available
-        if (account.idTokenClaims) {
-            console.group('ID Token Claims');
-            Object.entries(account.idTokenClaims).forEach(([key, value]) => {
-                // Skip standard claims that are already logged
-                if (!['iss', 'sub', 'aud', 'exp', 'iat', 'nbf', 'aio'].includes(key)) {
-                    console.log(`🔹 ${key}:`, value);
-                }
-            });
-            console.groupEnd();
-        }
-        
-        console.log('🔑 Scopes:', loginRequest.scopes);
-        console.groupEnd();
-    } else {
-        console.warn('No account found for username:', username);
-    }
-}
-
 function selectAccount() {
-
-    /**
-     * See here for more info on account retrieval: 
-     * https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-common/docs/Accounts.md
-     */
-
     const currentAccounts = msalInstance.getAllAccounts();
     if (currentAccounts.length === 0) {
         return;
@@ -79,16 +40,9 @@ function selectAccount() {
 }
 
 function handleResponse(response) {
-
-    /**
-     * To see the full list of response object properties, visit:
-     * https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-browser/docs/request-response-object.md#response
-     */
-
     if (response !== null) {
         username = response.account.username;
         showWelcomeMessage(username);
-        getToken();
     } else {
         selectAccount();
     }
@@ -124,49 +78,45 @@ export function signOut() {
     msalInstance.logoutPopup(logoutRequest);
 }
 
-export function getTokenPopup(request) {
-
-    /**
-     * See here for more info on account retrieval: 
-     * https://github.com/AzureAD/microsoft-authentication-library-for-js/blob/dev/lib/msal-common/docs/Accounts.md
-     */
-    request.account = msalInstance.getAccountByUsername(username);
+/**
+ * Displays account details in the console
+ * @param {string} username - The username of the logged-in account
+ */
+function showWelcomeMessage(username) {
+    const accounts = msalInstance.getAllAccounts();
+    const account = accounts.find(acc => acc.username === username);
     
-    return msalInstance.acquireTokenSilent(request)
-        .catch(error => {
-            console.warn("silent token acquisition fails. acquiring token using popup");
-            if (error instanceof msal.InteractionRequiredAuthError) {
-                // fallback to interaction when silent call fails
-                return msalInstance.acquireTokenPopup(request)
-                    .then(tokenResponse => {
-                        console.log(tokenResponse);
-                        return tokenResponse;
-                    }).catch(error => {
-                        console.error(error);
-                    });
-            } else {
-                console.warn(error);   
-            }
-    });
+    if (account) {
+        console.group('Account Details');
+        console.log('👤 Username:', account.username);
+        console.log('🏠 Home Account ID:', account.homeAccountId);
+        console.log('🏢 Tenant ID:', account.tenantId);
+        console.log('🔐 Local Account ID:', account.localAccountId);
+        
+        // Log additional claims if available
+        if (account.idTokenClaims) {
+            console.group('ID Token Claims');
+            Object.entries(account.idTokenClaims).forEach(([key, value]) => {
+                // Skip standard claims that are already logged
+                if (!['iss', 'sub', 'aud', 'exp', 'iat', 'nbf', 'aio'].includes(key)) {
+                    console.log(`🔹 ${key}:`, value);
+                }
+            });
+            console.groupEnd();
+        }
+        
+        console.log('🔑 Scopes:', loginRequest.scopes);
+        console.groupEnd();
+    } else {
+        console.warn('No account found for username:', username);
+    }
 }
+
+
 
 
 const endpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-data";
 
-export function getToken() {
-    getTokenPopup(loginRequest)
-        .then(response => {
-        //    getDataWithToken(endpoint, response.idToken,handleData); // use idToken - not accessToken
-        }).catch(error => {
-            console.error(error);
-        });
-}
-
-const handleData = (data, endpoint) => {
-    console.log('Handle Data at: ' + new Date().toString());
-    console.log('data',data)
-    console.log('endpoint',endpoint)
-}
 
 export async function getDataWithToken(endpoint) {
     try {
@@ -175,16 +125,11 @@ export async function getDataWithToken(endpoint) {
             throw new Error('Authentication required. Please sign in.');
         }
 
-        console.log('ID Token exists:', !!idToken);
-        
-        // Try using a plain object for headers instead of Headers()
         const options = {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${idToken}`
-            },
-            // Add credentials if needed (for cookies, HTTP authentication)
-            // credentials: 'include',
+            }
         };
 
         console.log('Request options:', JSON.stringify(options, null, 2));
