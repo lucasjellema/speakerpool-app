@@ -6,9 +6,9 @@
 export const msalConfig = {
     auth: {
         // 'Application (client) ID' of app registration in Azure portal - this value is a GUID
-        clientId: "0de52ab5-0a69-46b7-9ad1-db7306e2fc6e",
+        clientId: "c0461816-7078-466b-9329-6be5824c82dd",
         // Full directory URL, in the form of https://login.microsoftonline.com/<tenant-id>
-        authority: "https://login.microsoftonline.com/bf104ffd-a095-49bd-9949-d8f675a8632b",
+        authority: "https://login.microsoftonline.com/21429da9-e4ad-45f9-9a6f-cd126a64274b",
         // Full redirect URL, in form of http://localhost:3000 or window.location.origin
         redirectUri: window.location.origin,
     },
