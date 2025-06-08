@@ -1,5 +1,6 @@
 // Main Application Script
-import { loadSpeakerData, initializeParameters, getSpeakerByUniqueId, getSpeakerIdParameter } from './dataService.js';
+import { loadSpeakerData, initializeParameters, getSpeakerByUniqueId, getSpeakerIdParameter, getSpeakerByName } from './dataService.js';
+import { getUserName } from './authPopup.js';
 import { loadDashboardContent } from './modules/tabs/dashboardTab.js';
 import { loadFindContent } from './modules/tabs/findTab.js';
 import { loadSpeakersContent } from './modules/tabs/speakersTab.js';
@@ -18,12 +19,17 @@ document.addEventListener('DOMContentLoaded', () => {
             updateAuthUI();
             await loadSpeakerData();
             await refreshUIwithSpeakerData();
+            await displayUserProfileButton(); // Check and display 'Show My Profile' button
         }
 
     });
     
     // Initialize the app
     initializeApp();
+
+    // Call displayUserProfileButton on logout as well to clear it
+    // Assuming 'msal:logoutSuccess' or similar event could be listened for, or updateAuthUI handles it.
+    // For now, displayUserProfileButton will clear/hide if getUserName() is null after logout.
 });
 
 async function initializeApp() {
@@ -57,6 +63,71 @@ async function initializeApp() {
     } catch (error) {
         console.error('Error initializing authentication:', error);
         alert('Error initializing authentication. Please check the console for details.');
+    }
+}
+
+async function displayUserProfileButton() {
+    const profileButtonContainer = document.getElementById('my-profile-button-container');
+    if (!profileButtonContainer) {
+        console.error('Profile button container not found');
+        return;
+    }
+
+    profileButtonContainer.innerHTML = ''; // Clear previous button
+    profileButtonContainer.classList.add('d-none'); // Hide by default
+
+    const currentUserName = getUserName(); // From authPopup.js
+    if (currentUserName) {
+        try {
+            const speakerProfile = await getSpeakerByName(currentUserName); // From dataService.js
+            if (speakerProfile) {
+                const button = document.createElement('button');
+                button.id = 'showMyProfileBtn';
+                button.className = 'btn btn-info btn-sm';
+                button.textContent = 'Show My Profile';
+                button.addEventListener('click', () => {
+                    // speakerProfile.id is the one to pass to showSpeakerDetails
+                    // speakerProfile.uniqueId is used for URL params or direct lookup by uniqueId if needed
+                    
+                    // Ensure we have the speaker object, getSpeakerByUniqueId might be redundant if speakerProfile is complete
+                    // but good for consistency if dataService might have fresher objects.
+                    const speakerToDisplay = getSpeakerByUniqueId(speakerProfile.uniqueId); 
+                    if (!speakerToDisplay) {
+                        console.warn(`My profile: Speaker with unique ID ${speakerProfile.uniqueId} not found in current data.`);
+                        // Fallback to the initially fetched speakerProfile if speakerToDisplay is null
+                        // This can happen if speakerData hasn't been fully re-indexed by getSpeakerByUniqueId
+                        // For safety, we use speakerProfile.id which should be valid from getSpeakerByName
+                        if(speakerProfile && speakerProfile.id) {
+                           console.log("Falling back to speakerProfile.id for showSpeakerDetails");
+                        } else {
+                           alert('Could not find your speaker profile to display.');
+                           return;
+                        }
+                    }
+
+                    const targetSpeakerId = speakerToDisplay ? speakerToDisplay.id : speakerProfile.id;
+
+                    if (!document.getElementById('speakers-tab').classList.contains('active')) {
+                        loadSpeakersContent().then(() => { // Ensure speakers content is loaded
+                            const speakersTab = new bootstrap.Tab(document.getElementById('speakers-tab'));
+                            speakersTab.show();
+                            // Wait for tab content to be potentially rendered
+                            setTimeout(() => {
+                                showSpeakerDetails(targetSpeakerId); 
+                            }, 500); // Delay might need adjustment
+                        });
+                    } else {
+                        showSpeakerDetails(targetSpeakerId); 
+                    }
+                });
+                profileButtonContainer.appendChild(button);
+                profileButtonContainer.classList.remove('d-none'); // Show the container
+            } else {
+                 console.log("Current user is not listed as a speaker or name mismatch.");
+            }
+        } catch (error) {
+            console.error('Error checking speaker profile for current user:', error);
+        }
     }
 }
 

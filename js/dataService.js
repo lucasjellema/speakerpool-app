@@ -1,5 +1,8 @@
-import { getDataWithToken } from './authPopup.js';
+import { getDataWithToken, getUserName, getIdToken } from './authPopup.js';
 // Data Service for Speaker Pool Application
+
+const endpoint      = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-data";
+const deltaEndpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-delta"; //conclusion-assets/deltas";
 
 let speakerData = [];
 let deltasFolderPAR = '';
@@ -76,8 +79,26 @@ export function initializeParameters() {
 }
 
 
-const endpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-data";
 
+
+// Function to find a speaker by name (case-insensitive)
+export async function getSpeakerByName(name) {
+    if (!name) return null;
+    // Assuming speakerData is populated after initial load via loadSpeakerData().
+    if (speakerData && speakerData.length > 0) {
+        const lowerCaseName = name.toLowerCase();
+        return speakerData.find(speaker => speaker.name && speaker.name.toLowerCase() === lowerCaseName);
+    }
+    // Optionally, if speakerData might not be loaded yet, you could try loading it:
+    // else if (typeof loadSpeakerData === 'function') {
+    //     await loadSpeakerData(); // Assuming loadSpeakerData is async and populates speakerData
+    //     if (speakerData && speakerData.length > 0) {
+    //         const lowerCaseName = name.toLowerCase();
+    //         return speakerData.find(speaker => speaker.name && speaker.name.toLowerCase() === lowerCaseName);
+    //     }
+    // }
+    return null;
+}
 
 // Function to load speaker data from JSON file
 export async function loadSpeakerData() {
@@ -175,6 +196,84 @@ const getDataUrl = () => {
     }
     return localDataURL;
 }
+
+export async function updateMySpeakerProfile(updatedProfileData) {
+    const currentUserName = getUserName();
+    if (!currentUserName) {
+        throw new Error('User not authenticated or name claim is missing.');
+    }
+
+    const token = getIdToken();
+    if (!token) {
+        throw new Error('Authentication token not found. Please sign in.');
+    }
+
+    // The API Gateway route for /deltas (e.g., /conclusion-proxy/speakerpool-delta or /conclusion-proxy2/deltas)
+    // is expected to handle PUT requests and use request.auth[name] to determine the specific file in object storage.
+    // The deltaEndpoint variable should point to this base path for the API Gateway route.
+    // Based on previous user changes (Step 31), deltaEndpoint was set to:
+    // "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-delta"
+    // (after removing /conclusion-assets/deltas/ from its original value)
+    // This is the endpoint the PUT request should target.
+    const actualPutEndpoint = deltaEndpoint; 
+
+    console.log(`Attempting to PUT updated profile to: ${actualPutEndpoint} for user: ${currentUserName}`);
+
+    try {
+        const response = await fetch(actualPutEndpoint, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedProfileData)
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error('Error updating profile:', response.status, errorBody);
+            throw new Error(`Failed to update profile: ${response.status} ${response.statusText}. Detail: ${errorBody}`);
+        }
+
+        // Update local speakerData cache
+        const speakerIndex = speakerData.findIndex(s => s.id === updatedProfileData.id);
+        if (speakerIndex !== -1) {
+            speakerData[speakerIndex] = { ...speakerData[speakerIndex], ...updatedProfileData };
+            console.log('Local speaker data cache updated for speaker ID:', updatedProfileData.id);
+        } else {
+            console.warn('Speaker ID not found in local cache for update:', updatedProfileData.id);
+            // Optionally, add the new profile if it's somehow missing but was successfully PUT.
+            // speakerData.push(updatedProfileData); 
+        }
+
+        // Dispatch an event to notify other modules (e.g., speakerDetailsModule to refresh)
+        document.dispatchEvent(new CustomEvent('speakerDataUpdated', { 
+            detail: { 
+                speakerId: updatedProfileData.id, 
+                updatedData: speakerData.find(s => s.id === updatedProfileData.id) || updatedProfileData 
+            }
+        }));
+        
+        // Try to parse JSON from response, but handle cases where response might be empty (e.g., 204 No Content)
+        const responseContentType = response.headers.get('content-type');
+        let responseData = { success: true }; // Default success response
+        if (responseContentType && responseContentType.includes('application/json')) {
+            responseData = await response.json();
+        } else if (response.status === 204) {
+             console.log('Profile updated successfully (204 No Content).');
+        } else {
+            // If not JSON and not 204, just use default success and log the text if any
+            const textResponse = await response.text();
+            if(textResponse) console.log('Update response text:', textResponse);
+        }
+
+        return { success: true, data: responseData };
+    } catch (error) {
+        console.error('Error in updateMySpeakerProfile:', error);
+        throw error; // Re-throw to allow calling code to handle it
+    }
+}
+
 
 // Function to export all speaker data as JSON
 export function exportSpeakerData() {

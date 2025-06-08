@@ -1,5 +1,6 @@
 // Speaker Details Module
 import { getAllSpeakers, getSpeakerById, getSpeakerByUniqueId, isSpeakerInUrl, isInAdminMode } from '../dataService.js';
+import { getUserName } from '../authPopup.js';
 import { initializeSpeakerEdit, editSpeaker } from './speakerEditModule.js';
 
 // Variable to store the modal instance
@@ -87,7 +88,10 @@ function controlEditButtonVisibility(speaker) {
     if (!editButton) return;
     
     // Show edit button if in admin mode or if this speaker is the one referenced in the URL
-    if (isInAdminMode() || isSpeakerInUrl(speaker.uniqueId)) {
+        const currentUserName = getUserName();
+    const isCurrentUserProfile = currentUserName && speaker.name && speaker.name.toLowerCase() === currentUserName.toLowerCase();
+
+    if (isInAdminMode() || isSpeakerInUrl(speaker.uniqueId) || isCurrentUserProfile) {
         console.log(`Showing edit button for speaker: ${speaker.name} (admin mode or matches URL parameter)`);
         editButton.style.display = 'inline-block';
     } else {

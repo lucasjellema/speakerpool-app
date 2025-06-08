@@ -2,11 +2,13 @@
 import { 
     getSpeakerById, 
     updateSpeaker, 
+    updateMySpeakerProfile, // Added for self-profile updates
     getAllCompanies, 
     getAllLanguages,
     getAllSpeakers,
     isInAdminMode
 } from '../dataService.js';
+import { getUserName } from '../authPopup.js'; // Added to identify current user
 
 // Variable to store the modal instance
 let speakerEditModal = null;
@@ -354,80 +356,92 @@ async function populateLanguages(speakerLanguages) {
         
         checkboxDiv.appendChild(checkbox);
         checkboxDiv.appendChild(label);
-        
         languagesContainer.appendChild(checkboxDiv);
     });
 }
 
 // Function to save speaker changes
-function saveSpeakerChanges() {
-    // Check if we're editing an existing speaker or creating a new one
-    const speaker = getSpeakerById(currentSpeakerId);
-    let updatedSpeaker;
-    
-    if (speaker) {
-        // Editing an existing speaker - create a copy of the speaker object to update
-        updatedSpeaker = { ...speaker };
-    } else {
-        // Creating a new speaker
-        updatedSpeaker = {
-            id: currentSpeakerId,
-            uniqueId: generateUniqueId()
-        };
-    }
-    
-    
-    // Update basic information
-    updatedSpeaker.name = document.getElementById('edit-name').value;
-    updatedSpeaker.emailadress = document.getElementById('edit-email').value;
-    updatedSpeaker.imageUrl = document.getElementById('edit-image-url').value;
-    updatedSpeaker.linkedInURL = document.getElementById('edit-linkedin-url').value; // Get LinkedIn URL
-    
-    // Update company
+async function saveSpeakerChanges() {
+    // Collect data from form
+    const name = document.getElementById('edit-name').value?.trim();
+    const email = document.getElementById('edit-email').value?.trim();
     const companySelect = document.getElementById('edit-company-select');
-    if (companySelect.disabled) {
-        // If the select is disabled, we're adding a new company
-        updatedSpeaker.company = document.getElementById('edit-company-new').value.trim();
-    } else {
-        updatedSpeaker.company = companySelect.value;
-    }
-    
-    // Update availability
-    updatedSpeaker.internal = document.getElementById('edit-internal').checked;
-    updatedSpeaker.external = document.getElementById('edit-external').checked;
-    
-    // Update languages
-    const languageCheckboxes = document.querySelectorAll('#edit-languages-container input[type="checkbox"]');
-    updatedSpeaker.languages = {};
-    
-    languageCheckboxes.forEach(checkbox => {
-        updatedSpeaker.languages[checkbox.value] = checkbox.checked;
+    const company = companySelect.value;
+    const imageUrl = document.getElementById('edit-image-url').value?.trim();
+    const linkedInURL = document.getElementById('edit-linkedin-url').value?.trim();
+
+    const internal = document.getElementById('edit-internal').checked;
+    const external = document.getElementById('edit-external').checked;
+
+    const languages = {};
+    document.querySelectorAll('#edit-languages-container .form-check-input').forEach(checkbox => {
+        languages[checkbox.value] = checkbox.checked;
     });
-    
-    // Update topics
-    updatedSpeaker.topics = document.getElementById('edit-topics').value;
-    
-    // Update bio
-    updatedSpeaker.bio = document.getElementById('edit-bio').value;
-    
-    // Update presentations
-    updatedSpeaker.recent_presentations = document.getElementById('edit-presentations').value;
-    
-    // Update context
-    updatedSpeaker.context = document.getElementById('edit-context').value;
-    
-    // Save the updated speaker
-    const success = updateSpeaker(updatedSpeaker);
-    
-    if (success) {
-        // Hide the modal
-        speakerEditModal.hide();
-        
-        // Show success message
-        alert('Speaker updated successfully!');
-    } else {
-        alert('Failed to update speaker. Please try again.');
+
+    const topics = document.getElementById('edit-topics').value?.trim();
+    const bio = document.getElementById('edit-bio').value?.trim();
+    const recentPresentations = document.getElementById('edit-presentations').value?.trim();
+    const context = document.getElementById('edit-context').value?.trim();
+
+    if (!name) {
+        alert('Speaker name is required.');
+        return;
+    }
+
+    const originalSpeaker = getSpeakerById(currentSpeakerId);
+    if (!originalSpeaker) {
+        alert('Error: Original speaker data not found. Cannot save changes.');
+        return;
+    }
+
+    const updatedSpeakerData = {
+        ...originalSpeaker, // Preserve existing fields like id, uniqueId, and any others not on the form
+        name,
+        emailadress: email, 
+        company,
+        imageUrl,
+        linkedInURL,
+        internal,
+        external,
+        languages,
+        topics,
+        bio,
+        recent_presentations: recentPresentations,
+        context
+    };
+
+    const speakerBeingEdited = originalSpeaker; 
+    const loggedInUserName = getUserName();
+    const isEditingOwnProfile = speakerBeingEdited && loggedInUserName && 
+                                speakerBeingEdited.name && 
+                                speakerBeingEdited.name.toLowerCase() === loggedInUserName.toLowerCase();
+
+    try {
+        let result;
+        if (isEditingOwnProfile) {
+            console.log(`Saving changes for own profile (ID: ${currentSpeakerId}) via updateMySpeakerProfile...`);
+            result = await updateMySpeakerProfile(updatedSpeakerData);
+        } else if (isInAdminMode()) { // Admin editing someone else or creating new
+            console.log(`Saving changes as admin (ID: ${currentSpeakerId}) via updateSpeaker...`);
+            result = await updateSpeaker(updatedSpeakerData); // Existing admin save logic
+        } else {
+            alert('You do not have permission to save these changes.');
+            return;
+        }
+
+        if (result && result.success) {
+            speakerEditModal.hide();
+            alert('Speaker profile updated successfully!');
+        } else {
+            const errorMessage = result && result.error ? (result.error.message || JSON.stringify(result.error)) : 'An unknown error occurred.';
+            console.error('Failed to save speaker changes:', errorMessage);
+            alert(`Failed to save changes: ${errorMessage}`);
+        }
+    } catch (error) {
+        console.error('Error during saveSpeakerChanges:', error);
+        alert(`An error occurred while saving changes: ${error.message || error}`);
     }
 }
+
 
 export { initializeSpeakerEdit, editSpeaker, createNewSpeaker };

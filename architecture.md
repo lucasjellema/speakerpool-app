@@ -43,6 +43,12 @@ The application uses Microsoft Entra ID (formerly Azure AD) for authentication, 
    - All data-fetching operations require a valid token
    - Unauthenticated users are automatically redirected to the login page
 
+
+6. **Save changes**
+    - Users can save changes to their speaker profile ; the profile is matched on lower case, unspaced first and last name. 
+    - the delta file is saved in the deltas folder with the unique id of the speaker. 
+         
+
 ## Application Architecture Diagram
 
 The following diagram illustrates the structure and component relationships of the Sprekerpool application:

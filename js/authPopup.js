@@ -155,4 +155,16 @@ export async function getDataWithToken(endpoint) {
     }
 }
 
+
+export function getIdToken() {
+    return idToken;
+}
+
+export function getUserName() {
+    if (idTokenClaims && idTokenClaims.name) {
+        return idTokenClaims.name;
+    }
+    return null;
+}
+
 selectAccount();
