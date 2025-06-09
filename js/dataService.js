@@ -100,6 +100,65 @@ export async function getSpeakerByName(name) {
     return null;
 }
 
+
+// this function retrieves the modified speaker data for a specific user (typically the logged-in user)
+export async function loadUserSpeakerData(username) {
+    if (!username) {
+        console.warn('loadUserSpeakerData: username not provided.');
+        return null;
+    }
+
+    const token = getIdToken();
+    if (!token) {
+        console.warn('loadUserSpeakerData: Authentication token not found.');
+        return null;
+    }
+
+    // deltaEndpoint should be the base path for the API Gateway route that handles GET for user-specific deltas
+    // e.g., https://<api-gw-host>/conclusion-proxy/speakerpool-delta
+    // The API Gateway is configured to use request.auth[name] (which should match `username` here if called for self)
+    // to determine the actual backend S3 object path.
+    const userDeltaEndpoint = deltaEndpoint; 
+
+    console.log(`Attempting to GET user-specific speaker data from: ${userDeltaEndpoint} for user: ${username}`);
+
+    try {
+        const response = await fetch(userDeltaEndpoint, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const userSpecificData = await response.json();
+            // Check if the delta file contains an empty JSON object or is otherwise invalid
+            if (Object.keys(userSpecificData).length === 0) {
+                console.log(`User-specific delta file for ${username} is empty.`);
+                return null; 
+            }
+            if (!userSpecificData.id) {
+                console.warn(`User-specific data for ${username} is missing an 'id'.`, userSpecificData);
+                return null;
+            }
+            console.log(`Successfully loaded user-specific data for ${username}:`, userSpecificData);
+            return userSpecificData;
+        } else if (response.status === 404) {
+            console.log(`No user-specific delta file found for ${username} (404).`);
+            return null;
+        } else {
+            const errorBody = await response.text();
+            console.error(`Error fetching user-specific speaker data for ${username}:`, response.status, errorBody);
+            return null;
+        }
+    } catch (error) {
+        console.error(`Exception in loadUserSpeakerData for ${username}:`, error);
+        return null;
+    }
+}
+
+
 // Function to load speaker data from JSON file
 export async function loadSpeakerData() {
     try {
@@ -125,7 +184,36 @@ export async function loadSpeakerData() {
         const data = await response.json();
         speakerData = data;
 
-        // Check if we have a deltas folder specified
+        // After loading main data, try to load and merge user-specific data if a user is logged in and is a speaker
+        const currentUserName = getUserName();
+        if (currentUserName) {
+            console.log(`Current user: ${currentUserName}. Checking if they are a speaker.`);
+            // Use the main speakerData to check if the current user is listed
+            const speakerProfileInMainData = speakerData.find(s => s.name && s.name.toLowerCase() === currentUserName.toLowerCase());
+
+            if (speakerProfileInMainData) {
+                console.log(`User ${currentUserName} is a speaker. Attempting to load their specific delta data.`);
+                const userSpecificData = await loadUserSpeakerData(currentUserName);
+
+                if (userSpecificData && userSpecificData.id) {
+                    const speakerIndex = speakerData.findIndex(s => s.id === userSpecificData.id);
+                    if (speakerIndex !== -1) {
+                        console.log(`Merging user-specific data for ${currentUserName} (ID: ${userSpecificData.id}) into main speaker data.`);
+                        speakerData[speakerIndex] = { ...speakerData[speakerIndex], ...userSpecificData }; // Merge, userSpecificData takes precedence
+                    } else {
+                        console.warn(`Could not find speaker with ID ${userSpecificData.id} (from user-specific data for ${currentUserName}) in the main speakerData list to merge.`);
+                    }
+                } else {
+                    console.log(`No valid user-specific delta data found for ${currentUserName} to merge.`);
+                }
+            } else {
+                console.log(`User ${currentUserName} is logged in but not found in the main speaker list.`);
+            }
+        } else {
+            console.log('No user currently logged in, skipping user-specific data load.');
+        }
+
+        // Check if we have a deltas folder specified (for admin/URL param based delta loading - this might be redundant or for a different purpose now)
         if (deltasFolderPAR) {
             console.log(`Deltas folder is set to: ${deltasFolderPAR}`);
 
