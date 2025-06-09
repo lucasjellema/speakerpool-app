@@ -30,7 +30,7 @@ A modern, modular single-page web application for managing and presenting a pool
 - Interactive data visualizations with Chart.js
 - Event-driven architecture for real-time updates
 - URL query parameter support for direct speaker access
-- Delta file support for persistent speaker data changes
+- User-specific delta files for persistent speaker profile changes, managed via authenticated API calls.
 
 ## Project Structure
 
@@ -90,9 +90,6 @@ sprekerpool-app-new/
 
 ### URL Parameters
 - Use `sprekerId` query parameter to directly open a specific speaker's details using their unique ID (e.g., `index.html?sprekerId=4507a8c8ba58450`)
-- Use `parDataFile` query parameter to specify an alternative data source
-- Use `parDeltasFolder` query parameter to specify a folder for delta files that override or extend the main data
-- When both `sprekerId` and `parDeltasFolder` are specified, the application will try to load a delta file named `[sprekerId].json`
 
 ### Dashboard Interactions
 - Click on company segments in the pie chart to see speakers from that company
@@ -116,10 +113,9 @@ sprekerpool-app-new/
 - Centralized data service for consistent data access
 - In-memory data storage with event-based updates
 - Custom events for real-time UI updates
-- Delta file support for persisting changes to external storage
-- Ability to override specific speaker data via delta files
-- Dynamic delta file naming based on speaker's unique ID
-- Smart handling of empty or invalid delta files
+- User-specific delta files: Authenticated users' profile changes are saved to and loaded from personal delta files (e.g., `[UserNameFromJWT].json`) via secure API Gateway endpoints.
+- Automatic merging of user-specific data: On login, a speaker's delta data is fetched and merged with the main dataset, providing a personalized view.
+- Robust handling of missing or empty user-specific delta files.
 
 ### Modular Architecture
 - ES6 modules for code organization
@@ -135,9 +131,8 @@ sprekerpool-app-new/
 
 ### Current Limitations
 - Primarily client-side application with in-memory data storage
-- Changes to most speakers are lost on page refresh unless using delta files
+- Changes to speaker profiles (other than the logged-in user's own profile) are not persisted across sessions.
 - Limited data validation
-- Delta file functionality requires proper URL parameters to be set
 
 ### Potential Enhancements
 - Backend integration for persistent data storage

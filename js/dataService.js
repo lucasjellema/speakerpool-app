@@ -5,26 +5,15 @@ const endpoint      = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterda
 const deltaEndpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-delta"; //conclusion-assets/deltas";
 
 let speakerData = [];
-let deltasFolderPAR = '';
-let dataFilePAR = '';
+
 let speakerIdParameter = '';
 let isAdminMode = false;
 
 const localDataURL = 'data/Sprekerpool.json';
-const datafileQueryParameter = 'parDataFile';
-const deltasFolderQueryParameter = 'parDeltasFolder';
 const speakerIdQueryParameter = 'sprekerId';
 const adminModeQueryParameter = 'admin';
 
 // Functions to get URL parameters
-export function getDataFilePAR() {
-    return dataFilePAR;
-}
-
-export function getDeltasFolderPAR() {
-    return deltasFolderPAR;
-}
-
 export function getSpeakerIdParameter() {
     return speakerIdParameter;
 }
@@ -42,21 +31,7 @@ export function isSpeakerInUrl(speakerId) {
 export function initializeParameters() {
     const urlParams = new URLSearchParams(window.location.search);
 
-    // Get dataFile parameter
-    const dataFileParam = urlParams.get(datafileQueryParameter);
-    if (dataFileParam) {
-        dataFilePAR = dataFileParam;
-        console.log(`Initialized dataFilePAR: ${dataFilePAR}`);
-    }
 
-    // Get deltasFolder parameter
-    const deltasFolderParam = urlParams.get(deltasFolderQueryParameter);
-    if (deltasFolderParam) {
-        deltasFolderPAR = deltasFolderParam;
-        console.log(`Initialized deltasFolderPAR: ${deltasFolderPAR}`);
-    } else {
-        console.log('No deltasFolderPAR specified');
-    }
 
     // Get speaker ID parameter
     const speakerIdParam = urlParams.get(speakerIdQueryParameter);
@@ -75,7 +50,7 @@ export function initializeParameters() {
         console.log('Admin mode disabled');
     }
 
-    return { dataFilePAR, deltasFolderPAR, speakerIdParameter, isAdminMode };
+    return { speakerIdParameter, isAdminMode };
 }
 
 
@@ -213,76 +188,12 @@ export async function loadSpeakerData() {
             console.log('No user currently logged in, skipping user-specific data load.');
         }
 
-        // Check if we have a deltas folder specified (for admin/URL param based delta loading - this might be redundant or for a different purpose now)
-        if (deltasFolderPAR) {
-            console.log(`Deltas folder is set to: ${deltasFolderPAR}`);
-
-            // Attempt to load the delta file for the speaker ID from the query parameter
-            try {
-                // Use the speaker ID from the URL parameter, or default to a fallback if not specified
-                const deltaFileName = speakerIdParameter ? `${speakerIdParameter}.json` : 'speaker-delta.json';
-                const deltaUrl = `${deltasFolderPAR}${deltaFileName}`;
-                console.log(`Attempting to load delta file from: ${deltaUrl}`);
-
-                //  const token = await getAccessToken();
-                const deltaResponse = await fetch(deltaUrl, {
-                    headers: {
-                        'Authorization': `Bearer {token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (deltaResponse.ok) {
-                    const deltaData = await deltaResponse.json();
-                    console.log('Delta file loaded successfully');
-
-                    // Check if the delta file contains an empty JSON object
-                    const isEmptyObject = Object.keys(deltaData).length === 0;
-
-                    if (isEmptyObject) {
-                        console.log('Delta file contains an empty JSON object, skipping processing');
-                    }
-                    // Apply the delta to the speaker data if it's not empty and has an ID
-                    else if (deltaData && deltaData.id) {
-                        // Find the index of the speaker with matching ID
-                        const speakerIndex = speakerData.findIndex(speaker => speaker.id === deltaData.id);
-
-                        if (speakerIndex !== -1) {
-                            // Replace the speaker data with the delta data
-                            console.log(`Applying delta for speaker ID: ${deltaData.id}`);
-                            speakerData[speakerIndex] = deltaData;
-                        } else {
-                            // If speaker not found, add it to the array
-                            console.log(`Speaker ID ${deltaData.id} not found in main data, adding as new speaker`);
-                            speakerData.push(deltaData);
-                        }
-                    } else {
-                        console.warn('Delta file does not contain valid speaker data with ID');
-                    }
-                } else {
-                    console.log(`Delta file not found or not accessible (status: ${deltaResponse.status})`);
-                }
-            } catch (deltaError) {
-                // Don't let delta loading failure affect the main data loading
-                console.warn('Error loading delta file:', deltaError);
-            }
-        }
 
         return speakerData;
     } catch (error) {
         console.error('Error loading speaker data:', error);
         return [];
     }
-}
-
-// This function is now replaced by initializeParameters
-// Keeping it for backward compatibility but it's not used in loadSpeakerData anymore
-const getDataUrl = () => {
-
-    if (dataFilePAR) {
-        return dataFilePAR;
-    }
-    return localDataURL;
 }
 
 export async function updateMySpeakerProfile(updatedProfileData) {

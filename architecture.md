@@ -11,43 +11,44 @@ The Sprekerpool application is built as a client-side Single Page Application (S
 3. **Event-Driven Communication**: Components communicate via custom events
 4. **Dynamic Content Loading**: HTML templates are loaded dynamically as needed
 5. **Responsive UI**: Bootstrap 5 provides responsive design capabilities
-6. **Delta-based Persistence**: Changes to speaker data can be persisted using delta files
+6. **User-Specific Delta Persistence**: Authenticated users' profile changes are persisted to personal delta files via API Gateway.
 
-## Authentication Flow
+## Authentication Flow and User-Specific Data
 
-The application uses Microsoft Entra ID (formerly Azure AD) for authentication, implementing the following flow:
+The application uses Microsoft Entra ID (formerly Azure AD) for authentication. This flow is integrated with how user-specific data (profile overrides/deltas) is handled.
 
-1. **Initialization**:
-   - MSAL.js (Microsoft Authentication Library) is initialized with application configuration
-   - The app checks for existing authentication state in session storage
+1.  **MSAL Initialization**:
+    -   MSAL.js (Microsoft Authentication Library) is initialized with the application's Entra ID configuration.
+    -   The application checks for an existing authentication state (e.g., cached tokens in session/local storage).
 
-2. **Login Process**:
-   - User clicks the login button, triggering the MSAL login popup
-   - User authenticates with their Microsoft credentials
-   - On successful authentication, MSAL:
-     - Receives an ID token and access token
-     - Stores the authentication state in session storage
-     - Dispatches a 'msal:loginSuccess' event
+2.  **Login Process**:
+    -   User initiates login (e.g., clicks a login button).
+    -   MSAL redirects or opens a popup for Microsoft Entra ID authentication.
+    -   User authenticates with their credentials.
+    -   Upon successful authentication, MSAL receives an ID token and an access token.
+    -   The application stores these tokens (typically `idToken` is used for backend API calls, `accessToken` for Microsoft Graph API calls if any).
+    -   A `msal:loginSuccess` event (or similar custom event) is dispatched.
 
-3. **Token Usage**:
-   - The ID token is used to authenticate API requests to the backend
-   - Each API request includes the token in the Authorization header: `Bearer <idToken>`
-   - The token is automatically refreshed by MSAL when needed
+3.  **Token Usage for API Calls**:
+    -   The ID token (`idToken`) is primarily used to authenticate requests to the application's backend (OCI API Gateway).
+    -   For each request to a protected API Gateway endpoint, the `Authorization: Bearer <idToken>` header is included.
 
-4. **Session Management**:
-   - Authentication state is maintained in session storage
-   - The application listens for token expiration and handles re-authentication
-   - Users can explicitly log out, which clears the session
+4.  **User-Specific Data Loading on Login**:
+    -   Following a successful login, `dataService.js` (triggered by `main.js` listening to the login event) calls `getUserName()` from `authPopup.js` to get the `name` claim from the ID token.
+    -   It then checks if this user exists in the main `speakerData` (loaded from `Sprekerpool.json` via an authenticated API Gateway call).
+    -   If the user is a recognized speaker, `dataService.js` calls `loadUserSpeakerData(currentUserName)`. This function makes an authenticated `GET` request to the user-specific delta endpoint on the API Gateway (e.g., `/speakerpool-delta`).
+    -   The API Gateway uses the `request.auth[name]` claim from the JWT to identify and fetch the correct user's delta JSON file (e.g., `.../deltas/UserName.json`) from OCI Object Storage.
+    -   If the delta file is found and valid, its contents are merged into the in-memory `speakerData` for that user, overriding any values from the main `Sprekerpool.json`.
 
-5. **Protected Routes**:
-   - All data-fetching operations require a valid token
-   - Unauthenticated users are automatically redirected to the login page
+5.  **Saving Profile Changes (Self-Edit)**:
+    -   When an authenticated user edits their own profile (identified by matching `speaker.name` with `getUserName()`), `speakerEditModule.js` collects the form data.
+    -   It calls `dataService.updateMySpeakerProfile(updatedSpeakerData)`.
+    -   This function makes an authenticated `PUT` request to the same user-specific delta endpoint on the API Gateway (e.g., `/speakerpool-delta`).
+    -   The API Gateway again uses the `request.auth[name]` claim to identify and update (or create) the corresponding user's delta file in OCI Object Storage with the `updatedSpeakerData`.
 
-
-6. **Save changes**
-    - Users can save changes to their speaker profile ; the profile is matched on lower case, unspaced first and last name. 
-    - the delta file is saved in the deltas folder with the unique id of the speaker. 
-         
+6.  **Session Management & Logout**:
+    -   MSAL handles token lifetime and renewal in the background.
+    -   Logout clears MSAL's cache and the application's stored user state.
 
 ## Application Architecture Diagram
 
@@ -82,17 +83,17 @@ graph TD
     G --> G1[speakerDetails.html]
     H --> H1[speakerEditForm.html]
     
-    %% External Services
-    C --> I[OCI API Gateway]
-    I --> |"Fetches data from"| I1[OCI Object Storage]
+    %% External Services & Data Storage
+    C --> I_API[OCI API Gateway]
+    I_API --> |"Main Data / User Deltas"| I_Storage[OCI Object Storage]
     
     %% Authentication
-    A --> |"Authenticates via"| M[MS Entra ID]
-    
-    %% Delta Files
-    C --> O[Delta Files]
-    O -- "Load" --> C
-    H -- "Save Changes" --> O
+    A --> |"Authenticates via"| M_Auth[MS Entra ID]
+    M_Auth --> |ID Token| C %% ID token used by dataService for API calls
+
+    %% User-Specific Delta Flow (via API Gateway)
+    C --> |"GET User Delta (Auth)"| I_API
+    H --> |"PUT User Delta (Auth)"| C %% speakerEditModule calls dataService
     
     %% External Libraries
     J[Bootstrap 5] --> A
@@ -100,8 +101,8 @@ graph TD
     L[D3.js] --> D
     
     %% External Services Styling
-    classDef external fill:#f9f,stroke:#333,stroke-width:2px;
-    class M,I,I1 external;
+    classDef externalSvc fill:#f9f,stroke:#333,stroke-width:2px;
+    class M_Auth,I_API,I_Storage externalSvc;
     
     %% Event Flow
     C -- "Events" --> G
@@ -109,11 +110,9 @@ graph TD
     F -- "Events" --> G
     
     %% URL Parameters
-    M[URL Parameters] --> B
-    M -- "sprekerId" --> G
-    M -- "sprekerId" --> O
-    M -- "parDataFile" --> C
-    M -- "parDeltasFolder" --> O
+    M_URL[URL Parameters] --> B
+    M_URL -- "sprekerId" --> G
+    %% M_URL -- "admin" --> C (admin mode is initialized in dataService)
     
     %% Styling
     N[styles.css] --> A
@@ -144,16 +143,16 @@ graph TD
     end
     
     subgraph "External Resources"
-        I
+        I_API
+        I_Storage
         J
         K
         L
         N
-        O
     end
     
     %% Styling
-    classDef core fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef core fill:#cde,stroke:#333,stroke-width:2px;
     classDef module fill:#bbf,stroke:#333,stroke-width:1px;
     classDef template fill:#dfd,stroke:#333,stroke-width:1px;
     classDef data fill:#fdd,stroke:#333,stroke-width:1px;
@@ -162,19 +161,19 @@ graph TD
     class B,C core;
     class D,E,F,G,H module;
     class D1,E1,F1,G1,H1 template;
-    class I,O data;
     class J,K,L,N external;
 ```
 
 This diagram shows:
-- The core application components (main.js and dataService.js)
-- The tab modules and their HTML templates
-- The speaker management modules
-- Data flow between components
-- Event communication
-- URL parameter handling with dynamic delta file selection
-- External resources and libraries
-- Delta file persistence mechanism with unique ID support
+- The core application components (`main.js` and `dataService.js`).
+- The tab modules and their HTML templates.
+- The speaker management modules (`speakerDetailsModule.js`, `speakerEditModule.js`).
+- Data flow, including how `dataService.js` interacts with OCI API Gateway for both main data and user-specific delta files.
+- Authentication flow with MS Entra ID and token usage for API calls.
+- Event communication between components.
+- URL parameter handling for `sprekerId` (direct speaker access) and `admin` mode.
+- External resources and libraries used.
+- User-specific delta file persistence mechanism via OCI API Gateway, identified by JWT claims.
 
 
 ## Application Structure
