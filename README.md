@@ -19,6 +19,13 @@ A modern, modular single-page web application for managing and presenting a pool
 
 ### Speaker Management
 - Complete speaker details view
+
+### Admin Mode (New)
+- **Activation**: Via URL parameter `admin=yes` (e.g., `index.html?admin=yes`).
+- **Enhanced Data Loading**: On startup, loads all individual speaker delta files to provide the most comprehensive and up-to-date view of all profiles.
+- **Universal Editing**: Allows viewing and editing of *any* speaker profile, not just the logged-in user's.
+- **Centralized Saving**: Changes made to any profile are staged in memory. A "Save All Data" button appears, allowing an administrator to save all accumulated changes directly to the main `Sprekerpool.json` data source via a secure admin-specific API endpoint. This bypasses the creation of user-specific delta files.
+- **Purpose**: Designed for data curation, correcting profiles across the entire dataset, and consolidating widespread changes.
 - Edit speaker information
 - Add new companies and languages
 - Update speaker availability, topics, and bio
@@ -31,6 +38,7 @@ A modern, modular single-page web application for managing and presenting a pool
 - Event-driven architecture for real-time updates
 - URL query parameter support for direct speaker access
 - User-specific delta files for persistent speaker profile changes, managed via authenticated API calls.
+- **Admin Mode**: Special mode for comprehensive data management, allowing edits to any profile and direct updates to the main data source (see Admin Mode feature section).
 
 ## Project Structure
 
@@ -85,6 +93,7 @@ sprekerpool-app-new/
 - **Speaker Details**: Click "View Details" on any speaker to see complete information
 - **Edit Speaker**: Click "Edit" in the speaker details modal to modify information
 - **Direct Speaker Access**: Access a specific speaker's details directly by using the URL query parameter `sprekerId` (e.g., `index.html?sprekerId=123`)
+- **Admin Mode**: Activate by adding `admin=yes` to the URL (e.g., `index.html?admin=yes`) to enable administrative features.
 
 ## Interactive Features
 
@@ -131,7 +140,7 @@ sprekerpool-app-new/
 
 ### Current Limitations
 - Primarily client-side application with in-memory data storage
-- Changes to speaker profiles (other than the logged-in user's own profile) are not persisted across sessions.
+- Changes to speaker profiles (other than the logged-in user's own profile) are not persisted across sessions, *unless using Admin Mode*.
 - Limited data validation
 
 ### Potential Enhancements

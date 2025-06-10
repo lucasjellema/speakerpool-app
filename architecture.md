@@ -50,6 +50,57 @@ The application uses Microsoft Entra ID (formerly Azure AD) for authentication. 
     -   MSAL handles token lifetime and renewal in the background.
     -   Logout clears MSAL's cache and the application's stored user state.
 
+## Admin Mode Implementation
+
+Admin Mode provides enhanced capabilities for data management, allowing privileged users to edit any speaker profile and update the main data source directly. This mode operates with a distinct workflow and interacts with a specialized backend endpoint.
+
+### Activation and Client-Side Detection
+- **URL Parameter**: Admin Mode is activated by appending the `admin=yes` query parameter to the application URL (e.g., `index.html?admin=yes`).
+- **Initialization**: The `initializeParameters()` function in `js/dataService.js` checks for this parameter on application load.
+- **State Check**: The `isInAdminMode()` function in `js/dataService.js` provides a global way to check if admin mode is currently active.
+
+### Admin Endpoint and Authorization
+- **Specialized Endpoint**: A dedicated `adminEndpoint` (e.g., `/speakerpool-admin` via OCI API Gateway) is used for all admin-specific operations.
+- **Authentication**: All requests to the `adminEndpoint` must include a valid JWT ID token in the `Authorization: Bearer <token>` header, obtained via MSAL authentication.
+- **Authorization**: The OCI API Gateway is configured to authorize requests to the `adminEndpoint`. Authorization is based on the `preferred_username` claim within the JWT. Only users whose `preferred_username` matches a pre-defined list of administrators are permitted to execute operations against this endpoint.
+
+### `Asset-Path` Header for Resource Specification
+The `adminEndpoint` uses a custom HTTP header, `Asset-Path`, to specify the target resource within OCI Object Storage. The URL of the HTTP Backend of the Route on API Gateway uses the `${request.headers['Asset-Path']}` expression to dynamically resolve to the intended asset.
+
+1.  **Listing All Delta Files**:
+    -   **Request**: Client sends a `GET` request to `adminEndpoint` with an empty `Asset-Path` header (`Asset-Path: ""`).
+    -   **Backend Logic**: The OCI API Gateway interprets this as a request to list objects. It lists all files within a designated prefix in OCI Object Storage where individual speaker delta files are stored (e.g., `conclusion-assets/deltas/`).
+    -   **Response**: Returns a JSON object containing an `objects` property. `objects` is itself an object where keys are indices and values are objects with a `name` property holding the full path to each delta file (e.g., `{ "objects": { "0": {"name": "conclusion-assets/deltas/UserOne.json"}, ... } }`).
+    -   **Client-Side**: `js/dataService.js#retrieveAllSpeakerDeltas()` initiates this request and parses the response to get a list of delta file paths.
+
+2.  **Fetching an Individual Delta File**:
+    -   **Request**: For each delta file path obtained from the listing, the client sends a `GET` request to `adminEndpoint` with the `Asset-Path` header set to the specific file path (e.g., `Asset-Path: "conclusion-assets/deltas/UserOne.json"`).
+    -   **Backend Logic**: The OCI Function retrieves the content of the specified file from OCI Object Storage.
+    -   **Response**: Returns the JSON content of the individual delta file.
+    -   **Client-Side**: `js/dataService.js#retrieveAllSpeakerDeltas()` iterates through the list of paths and makes these requests, collecting all delta data.
+
+3.  **Saving Main Speaker Data (Admin Save)**:
+    -   **Request**: Client sends a `PUT` request to `adminEndpoint`. The `Asset-Path` header is set to the path of the main speaker data file that needs to be overwritten (e.g., `Asset-Path: "conclusion-assets/SprekerpoolADMIN.json"`). The request body contains the entire `speakerData` array as a JSON string.
+    -   **Backend Logic**: The OCI  overwrites the file specified by `Asset-Path` in OCI Object Storage with the content from the request body.
+    -   **Client-Side**: `js/dataService.js#saveSpeakerDataAsAdmin()` constructs and sends this request when the admin clicks the "Save All Data" button.
+
+### Client-Side Logic and UI
+-   **`js/dataService.js`**:
+    -   `retrieveAllSpeakerDeltas()`: On load in admin mode, fetches all individual delta files as described above and merges them into the in-memory `speakerData`. This ensures admins see the most up-to-date version of all profiles, including all pending changes.
+    -   `updateSpeaker()`: When an admin edits a profile, this function updates the speaker's data directly in the in-memory `speakerData` array and dispatches a `speakerDataModifiedByAdmin` event. It does *not* save an individual delta file for this edit.
+    -   `saveSpeakerDataAsAdmin()`: Triggered by the admin save button, this function sends the entire current `speakerData` (including all admin modifications) to the `adminEndpoint` with the appropriate `Asset-Path` to overwrite the main data file.
+-   **`js/main.js`**:
+    -   Initializes a "Save All Data" button if in admin mode.
+    -   This button is initially hidden/disabled.
+    -   Listens for the `speakerDataModifiedByAdmin` event. When this event occurs, the "Save All Data" button becomes visible/enabled.
+    -   When clicked, the button calls `saveSpeakerDataAsAdmin()`.
+    -   Handles `adminDataSavedSuccess` and `adminDataSavedError` events to update the button's state (e.g., show "Saved!" or "Save Failed").
+-   **UI Impact (Planned)**:
+    -   The "Edit Profile" button will be available for all speaker profiles when in admin mode.
+    -   The speaker edit form, when saved in admin mode, will trigger `dataService.updateSpeaker()` instead of `dataService.updateMySpeakerProfile()`.
+
+This admin mode architecture allows for centralized control and curation of the speaker data by authorized administrators, using a secure and distinct API flow.
+
 ## Application Architecture Diagram
 
 The following diagram illustrates the structure and component relationships of the Sprekerpool application:
