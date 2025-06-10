@@ -137,7 +137,7 @@ export async function getDataWithToken(endpoint) {
         // Log the actual request being made
         console.log('Making request to:', endpoint);
         
-        const response = await fetch(endpoint, options);
+        const response = await fetch(endpoint  +"?ts="+Date.now()  , options);
         
         // Log response details for debugging
         console.log('Response status:', response.status, response.statusText);
