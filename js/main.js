@@ -1,11 +1,13 @@
 // Main Application Script
-import { loadSpeakerData, initializeParameters, getSpeakerByUniqueId, getSpeakerIdParameter, getSpeakerByName } from './dataService.js';
+import { loadSpeakerData, initializeParameters, getSpeakerByUniqueId, getSpeakerIdParameter, getSpeakerByName, isInAdminMode, saveSpeakerDataAsAdmin } from './dataService.js';
 import { getUserName } from './authPopup.js';
 import { loadDashboardContent } from './modules/tabs/dashboardTab.js';
 import { loadFindContent } from './modules/tabs/findTab.js';
 import { loadSpeakersContent } from './modules/tabs/speakersTab.js';
 import { initializeSpeakerDetails, showSpeakerDetails } from './modules/speakerDetailsModule.js';
 import { setupAuthUI , handleLogin, updateAuthUI} from './authUI.js';
+
+let adminSaveButton = null; // To hold the admin save button element
 
 // Initialize the application when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
@@ -30,7 +32,85 @@ document.addEventListener('DOMContentLoaded', () => {
     // Call displayUserProfileButton on logout as well to clear it
     // Assuming 'msal:logoutSuccess' or similar event could be listened for, or updateAuthUI handles it.
     // For now, displayUserProfileButton will clear/hide if getUserName() is null after logout.
+
+    // Listen for admin-related data events
+    window.addEventListener('speakerDataModifiedByAdmin', () => {
+        if (adminSaveButton && isInAdminMode()) {
+            adminSaveButton.disabled = false;
+            adminSaveButton.textContent = 'Save All Data';
+            document.getElementById('admin-save-button-container').classList.remove('d-none');
+            console.log('Admin mode: Changes detected, save button enabled.');
+        }
+    });
+
+    window.addEventListener('adminDataSavedSuccess', () => {
+        if (adminSaveButton) {
+            adminSaveButton.disabled = true;
+            adminSaveButton.textContent = 'Saved!';
+            console.log('Admin mode: All data saved successfully.');
+            // Optionally, revert text after a delay but keep disabled
+            // setTimeout(() => { 
+            //    if(adminSaveButton.disabled) adminSaveButton.textContent = 'Save All Data'; 
+            // }, 3000);
+        }
+    });
+
+    window.addEventListener('adminDataSavedError', (event) => {
+        if (adminSaveButton) {
+            adminSaveButton.disabled = false; // Allow retry
+            adminSaveButton.textContent = 'Save Failed - Retry?';
+            console.error('Admin mode: Error saving data:', event.detail);
+            alert(`Admin mode: Error saving data. ${event.detail?.message || 'Check console.'}`);
+        }
+    });
 });
+
+function createAdminSaveButton() {
+    const container = document.getElementById('admin-save-button-container');
+    if (!container) {
+        console.error('Admin save button container not found.');
+        return;
+    }
+
+    container.innerHTML = ''; // Clear previous button if any
+
+    const button = document.createElement('button');
+    button.id = 'adminSaveAllDataBtn';
+    button.className = 'btn btn-danger btn-sm'; // Using btn-danger for admin actions
+    button.textContent = 'Save All Data';
+    button.disabled = true; // Start disabled, enable on 'speakerDataModifiedByAdmin'
+    
+    button.addEventListener('click', async () => {
+        if (!isInAdminMode()) return;
+
+        button.disabled = true;
+        button.textContent = 'Saving...';
+        try {
+            const result = await saveSpeakerDataAsAdmin();
+            if (result.success) {
+                // Event 'adminDataSavedSuccess' will handle button text update to 'Saved!'
+                // No need to directly set to 'Saved!' here if event listener does it.
+                console.log('Admin save successful from button click.');
+            } else {
+                // Event 'adminDataSavedError' will handle button text update
+                console.error('Admin save failed from button click:', result.message);
+            }
+        } catch (error) {
+            // This catch is for unexpected errors in saveSpeakerDataAsAdmin itself if it throws
+            // The 'adminDataSavedError' event should ideally be dispatched from within saveSpeakerDataAsAdmin for consistency
+            console.error('Critical error during admin save:', error);
+            button.disabled = false;
+            button.textContent = 'Save Failed - Retry?';
+            alert(`Critical error during admin save. ${error.message || 'Check console.'}`);
+        }
+    });
+
+    container.appendChild(button);
+    adminSaveButton = button; // Store button reference
+    // Container starts with d-none. It will be made visible when changes are made.
+    // If there are pending changes on load (e.g. from previously unsaved session), 
+    // the 'speakerDataModifiedByAdmin' event should still fire after deltas are merged.
+}
 
 async function initializeApp() {
     try {
@@ -44,7 +124,13 @@ async function initializeApp() {
         updateUI();
 
         // Handle login
-            await handleLogin();
+        await handleLogin();
+
+        if (isInAdminMode()) {
+            createAdminSaveButton();
+            // The button container ('admin-save-button-container') is initially d-none.
+            // It becomes visible when 'speakerDataModifiedByAdmin' is dispatched.
+        }
         
         try {
             // Try to load speaker data (will trigger login if not authenticated)

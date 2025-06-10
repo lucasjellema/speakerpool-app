@@ -115,7 +115,7 @@ function showWelcomeMessage(username) {
 
 
 
-const endpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-data";
+//const endpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-data";
 
 
 export async function getDataWithToken(endpoint) {

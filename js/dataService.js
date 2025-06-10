@@ -2,6 +2,7 @@ import { getDataWithToken, getUserName, getIdToken } from './authPopup.js';
 // Data Service for Speaker Pool Application
 
 const endpoint      = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-data";
+const adminEndpoint      = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-admin-proxy/speakerpool-admin";
 const deltaEndpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-delta"; //conclusion-assets/deltas";
 
 let speakerData = [];
@@ -30,31 +31,14 @@ export function isSpeakerInUrl(speakerId) {
 // Function to initialize parameters from URL
 export function initializeParameters() {
     const urlParams = new URLSearchParams(window.location.search);
-
-
-
-    // Get speaker ID parameter
-    const speakerIdParam = urlParams.get(speakerIdQueryParameter);
-    if (speakerIdParam) {
-        speakerIdParameter = speakerIdParam;
-        console.log(`Initialized speakerIdParameter: ${speakerIdParameter}`);
-    }
-
-    // Check for admin mode
+    speakerIdParameter = urlParams.get(speakerIdQueryParameter);
+    // Check for 'admin=yes' (case-insensitive)
     const adminParam = urlParams.get(adminModeQueryParameter);
-    if (adminParam && adminParam.toLowerCase() === 'yes') {
-        isAdminMode = true;
-        console.log('Admin mode enabled');
-    } else {
-        isAdminMode = false;
-        console.log('Admin mode disabled');
-    }
+    isAdminMode = adminParam?.toLowerCase() === 'yes';
+    console.log(`Admin mode: ${isAdminMode}`);
+    console.log(`SpeakerId from URL: ${speakerIdParameter}`);
 
-    return { speakerIdParameter, isAdminMode };
 }
-
-
-
 
 // Function to find a speaker by name (case-insensitive)
 export async function getSpeakerByName(name) {
@@ -75,7 +59,6 @@ export async function getSpeakerByName(name) {
     return null;
 }
 
-
 // this function retrieves the modified speaker data for a specific user (typically the logged-in user)
 export async function loadUserSpeakerData(username) {
     if (!username) {
@@ -89,6 +72,31 @@ export async function loadUserSpeakerData(username) {
         return null;
     }
 
+    // Debug call to fetch admin endpoint and log response
+    (async () => {
+        try {
+            const token = getIdToken();
+            if (!token) {
+                console.error('Admin mode: Authentication token not found.');
+                return;
+            }
+
+            const response = await fetch(adminEndpoint, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            const data = await response.json();
+            console.log('Admin endpoint response:', data);
+        } catch (error) {
+            console.error('Error fetching admin endpoint:', error);
+        }
+    })();
+
+
+
+
     // deltaEndpoint should be the base path for the API Gateway route that handles GET for user-specific deltas
     // e.g., https://<api-gw-host>/conclusion-proxy/speakerpool-delta
     // The API Gateway is configured to use request.auth[name] (which should match `username` here if called for self)
@@ -98,7 +106,7 @@ export async function loadUserSpeakerData(username) {
     console.log(`Attempting to GET user-specific speaker data from: ${userDeltaEndpoint} for user: ${username}`);
 
     try {
-        const response = await fetch(userDeltaEndpoint, {
+        const response = await fetch(userDeltaEndpoint + `?ts=${Date.now()}`    , {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -132,7 +140,6 @@ export async function loadUserSpeakerData(username) {
         return null;
     }
 }
-
 
 // Function to load speaker data from JSON file
 export async function loadSpeakerData() {
@@ -184,6 +191,36 @@ export async function loadSpeakerData() {
             } else {
                 console.log(`User ${currentUserName} is logged in but not found in the main speaker list.`);
             }
+
+            if (isInAdminMode()) {
+                console.log('In admin mode, attempting to fetch and merge all speaker deltas.');
+                const allSpeakerDeltas = await retrieveAllSpeakerDeltas();
+                if (allSpeakerDeltas && allSpeakerDeltas.length > 0) {
+                    allSpeakerDeltas.forEach(delta => {
+                        if (delta && delta.id) { // Assuming delta objects have an 'id' for matching
+                            const speakerIndex = speakerData.findIndex(s => s.id === delta.id);
+                            if (speakerIndex !== -1) {
+                                console.log(`Admin mode: Merging delta for speaker ID ${delta.id} (${speakerData[speakerIndex].name}).`);
+                                speakerData[speakerIndex] = { ...speakerData[speakerIndex], ...delta };
+                               
+                            } else {
+                                console.warn(`Admin mode: Delta received for unknown speaker ID ${delta.id}.`);
+                            }
+                        } else if (delta && delta.name) {
+                            // Fallback: if no ID, try to match by normalized name (requires normalizeName function)
+                            // const normalizedDeltaName = normalizeName(delta.name); // You'd need to add normalizeName function
+                            // const speakerIndex = speakerData.findIndex(s => normalizeName(s.name) === normalizedDeltaName);
+                            // if (speakerIndex !== -1) { ... similar merge logic ... }
+                            console.warn('Admin mode: Delta received without ID, name-based merging not yet fully implemented here.', delta);
+                        } else {
+                            console.warn('Admin mode: Received invalid delta object.', delta);
+                        }
+                    });
+                    console.log('Admin mode: Finished merging all speaker deltas.');
+                } else {
+                    console.log('Admin mode: No speaker deltas found or returned to merge.');
+                }
+            }
         } else {
             console.log('No user currently logged in, skipping user-specific data load.');
         }
@@ -215,6 +252,9 @@ export async function updateMySpeakerProfile(updatedProfileData) {
     // (after removing /conclusion-assets/deltas/ from its original value)
     // This is the endpoint the PUT request should target.
     const actualPutEndpoint = deltaEndpoint; 
+
+    // Add/update the lastModified timestamp
+    updatedProfileData.lastModified = new Date().toISOString();
 
     console.log(`Attempting to PUT updated profile to: ${actualPutEndpoint} for user: ${currentUserName}`);
 
@@ -272,7 +312,6 @@ export async function updateMySpeakerProfile(updatedProfileData) {
         throw error; // Re-throw to allow calling code to handle it
     }
 }
-
 
 // Function to export all speaker data as JSON
 export function exportSpeakerData() {
@@ -349,71 +388,39 @@ export function updateSpeaker(updatedSpeaker) {
     const index = speakerData.findIndex(speaker => speaker.id === updatedSpeaker.id);
 
     if (index !== -1) {
-        // Add last modified timestamp to the speaker data
-        updatedSpeaker.lastModifiedTimestamp = new Date().toISOString();
-
-        // Update the speaker data
+        // Add/update the lastModified timestamp before updating
+        updatedSpeaker.lastModified = new Date().toISOString();
+        
+        // Update the speaker's details in the in-memory array
         speakerData[index] = updatedSpeaker;
+        console.log(`Admin mode: Updated speaker ${updatedSpeaker.name} in memory. lastModified: ${updatedSpeaker.lastModified}`);
 
-        // If deltasFolderPAR is specified, save the updated speaker to the delta file
-        if (deltasFolderPAR) {
-            // Use the speaker's uniqueId for the delta file name, or fall back to the regular ID
-            const deltaFileName = updatedSpeaker.uniqueId ? `${updatedSpeaker.uniqueId}.json` : `${updatedSpeaker.id}.json`;
-            const deltaUrl = `${deltasFolderPAR}${deltaFileName}`;
-            console.log(`Saving updated speaker to delta file: ${deltaUrl}`);
+        // Dispatch an event to notify listeners of the data update
+        // This event can be used by UI components to refresh and by main.js to enable the admin save button
+        window.dispatchEvent(new CustomEvent('speakerDataModifiedByAdmin', {
+            detail: {
+                speakerId: updatedSpeaker.id,
+                updatedData: speakerData[index]
+            }
+        }));
+        window.dispatchEvent(new CustomEvent('speakerDataUpdated', { // also dispatch generic update for other listeners
+            detail: {
+                speakerId: updatedSpeaker.id,
+                updatedData: speakerData[index]
+            }
+        }));
 
-            // Convert the speaker object to JSON
-            const speakerJson = JSON.stringify(updatedSpeaker, null, 2);
-            const blob = new Blob([speakerJson], { type: 'application/json' });
+        return { success: true, data: null };; // Return true if the update was successful
+            return { success: true, data: null };
 
-            // Save the file using the saveFile function
-            saveFile(blob, deltaFileName, deltasFolderPAR)
-                .then(() => console.log('Speaker delta saved successfully to remote endpoint'))
-                .catch(error => console.error('Error saving speaker delta:', error));
-        }
-
-        console.log(`Speaker ${updatedSpeaker.id} updated successfully`);
-
-        // Dispatch a custom event to notify components that data has changed
-        const event = new CustomEvent('speakerDataUpdated', { detail: { speakerId: updatedSpeaker.id } });
-        document.dispatchEvent(event);
-
-        return true;
     } else {
-        // Add last modified timestamp to the speaker data
-        updatedSpeaker.lastModifiedTimestamp = new Date().toISOString();
-
-        // This is a new speaker - add it to the array
-        speakerData.push(updatedSpeaker);
-
-        // If deltasFolderPAR is specified, save the updated speaker to the delta file
-        if (deltasFolderPAR) {
-            // Use the speaker's uniqueId for the delta file name, or fall back to the regular ID
-            const deltaFileName = updatedSpeaker.uniqueId ? `${updatedSpeaker.uniqueId}.json` : `${updatedSpeaker.id}.json`;
-            const deltaUrl = `${deltasFolderPAR}${deltaFileName}`;
-            console.log(`Saving new speaker to delta file: ${deltaUrl}`);
-
-            // Convert the speaker object to JSON
-            const speakerJson = JSON.stringify(updatedSpeaker, null, 2);
-            const blob = new Blob([speakerJson], { type: 'application/json' });
-
-            // Save the file using the saveFile function
-            saveFile(blob, deltaFileName, deltasFolderPAR)
-                .then(() => console.log('New speaker delta saved successfully to remote endpoint'))
-                .catch(error => console.error('Error saving new speaker delta:', error));
-        }
-
-        console.log(`New speaker ${updatedSpeaker.id} added successfully`);
-
-        // Dispatch a custom event to notify components that data has changed
-        const event = new CustomEvent('speakerDataUpdated', { detail: { speakerId: updatedSpeaker.id } });
-        document.dispatchEvent(event);
-
-        return true;
+        console.warn(`Speaker with ID ${updatedSpeaker.id} not found.`);
+        return false; // Return false if the speaker was not found
     }
-
-    return false;
 }
+
+
+
 
 // Function to get all unique companies from speaker data
 export function getAllCompanies() {
@@ -444,6 +451,151 @@ export function getAllLanguages() {
 
     return Array.from(languages).sort();
 }
+
+// Function for admin to save all speaker data (potentially modified)
+export async function saveSpeakerDataAsAdmin() {
+    if (!isInAdminMode()) {
+        console.error('Attempted to call saveSpeakerDataAsAdmin when not in admin mode.');
+        return { success: false, message: 'Not in admin mode.' };
+    }
+
+    const token = getIdToken();
+    if (!token) {
+        console.error('Admin save: Authentication token not found.');
+        return { success: false, message: 'Authentication token not found. Please sign in.' };
+    }
+
+    console.log(`Admin mode: Saving all speaker data (${speakerData.length} speakers) to ${adminEndpoint}`);
+
+    try {
+        const response = await fetch(adminEndpoint, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Asset-Path': 'conclusion-assets/SprekerpoolADMIN.json'
+            },
+            body: JSON.stringify(speakerData) // Send the entire current speakerData array
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error(`Admin save failed: ${response.status} ${response.statusText}. ${errorBody}`);
+            throw new Error(`Failed to save speaker data as admin: ${response.status} ${response.statusText}. ${errorBody}`);
+        }
+
+        console.log('Admin mode: Speaker data saved successfully via adminEndpoint.');
+        // Optionally, dispatch an event indicating admin save success
+        window.dispatchEvent(new CustomEvent('adminDataSavedSuccess'));
+        return { success: true, message: 'Speaker data saved successfully.' };
+
+    } catch (error) {
+        console.error('Error in saveSpeakerDataAsAdmin:', error);
+        // Optionally, dispatch an event indicating admin save failure
+        window.dispatchEvent(new CustomEvent('adminDataSavedError', { detail: error }));
+        return { success: false, message: error.message || 'An unexpected error occurred.' };
+    }
+}
+
+
+
+async function retrieveAllSpeakerDeltas() {
+    if (!isInAdminMode()) {
+        console.warn("retrieveAllSpeakerDeltas called when not in admin mode.");
+        return [];
+    }
+    const token = getIdToken();
+    if (!token) {
+        console.warn("retrieveAllSpeakerDeltas: Authentication token not found.");
+        return [];
+    }
+
+    const allFetchedDeltas = [];
+
+    // Step 1: Get the list of delta file names
+    console.log(`Admin mode: Fetching list of delta file names from ${adminEndpoint} with empty Asset-Path.`);
+    try {
+        // add timestamp to prevent caching
+        const listResponse = await fetch(adminEndpoint + `?ts=${Date.now()}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Asset-Path': '' // Empty string for listing
+            }
+        });
+
+        if (!listResponse.ok) {
+            const errorBody = await listResponse.text();
+            console.error(`Error fetching delta file list: ${listResponse.status} ${listResponse.statusText}. Body: ${errorBody}`);
+            return []; // Stop if we can't get the list
+        }
+
+        const listData = await listResponse.json();
+
+        if (!listData || typeof listData.objects !== 'object' || listData.objects === null) {
+            console.error('Error: Delta file list response does not contain a valid \'objects\' property.', listData);
+            return [];
+        }
+
+        // Convert the object of objects into an array of {name: 'path'} objects, then extract the names
+        const allObjectPaths = Object.values(listData.objects);
+        let deltaFileNames = allObjectPaths
+            .map(obj => obj && obj.name) // Extract the name property
+            .filter(name => typeof name === 'string'); // Ensure it's a string
+        
+        // Further filter to include only actual delta files, e.g., those in a specific path
+        // This path should match how your delta files are stored and identified.
+        const deltasBasePath = 'conclusion-assets/deltas/'; // Adjust if your delta path is different
+        deltaFileNames = deltaFileNames.filter(name => name.startsWith(deltasBasePath));
+
+        if (deltaFileNames.length === 0) {
+            console.log('No delta files found after filtering paths.');
+            return [];
+        }
+        console.log(`Found ${deltaFileNames.length} delta file names to process after filtering:`, deltaFileNames);
+
+        // Step 2: Fetch each delta file individually
+        for (const assetPath of deltaFileNames) {
+            if (!assetPath || typeof assetPath !== 'string') {
+                console.warn('Skipping invalid asset path:', assetPath);
+                continue;
+            }
+            console.log(`Admin mode: Fetching delta file with Asset-Path: ${assetPath}`);
+            try {
+                const deltaResponse = await fetch(adminEndpoint + `?ts=${Date.now()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Asset-Path': assetPath
+                    }
+                });
+
+                if (deltaResponse.ok) {
+                    const deltaData = await deltaResponse.json();
+                    if (deltaData && (deltaData.id || deltaData.name)) { // Basic validation
+                        allFetchedDeltas.push(deltaData);
+                        console.log(`Successfully fetched and added delta for Asset-Path: ${assetPath}`);
+                    } else {
+                        console.warn(`Skipping delta from ${assetPath} due to missing id/name or empty data.`, deltaData);
+                    }
+                } else {
+                    const errorBody = await deltaResponse.text();
+                    console.warn(`Error fetching delta file for Asset-Path ${assetPath}: ${deltaResponse.status} ${deltaResponse.statusText}. Body: ${errorBody}`);
+                }
+            } catch (fileError) {
+                console.error(`Exception fetching individual delta file ${assetPath}:`, fileError);
+            }
+        }
+        
+        console.log(`Admin mode: Successfully fetched ${allFetchedDeltas.length} delta files.`);
+        return allFetchedDeltas;
+
+    } catch (error) {
+        console.error(`Exception in retrieveAllSpeakerDeltas (outer try-catch):`, error);
+        return [];
+    }
+}
+
 
 // Function to search speakers by various criteria
 export function searchSpeakers(criteria) {
