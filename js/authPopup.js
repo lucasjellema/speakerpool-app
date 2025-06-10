@@ -10,8 +10,8 @@ let username = "";
 // Add event listener for successful login
 msalInstance.addEventCallback((message) => {
     console.log('MSAL Event:', message.eventType);
-    
-    if (message.eventType === 'msal:loginSuccess' || message.eventType === 'msal:acquireTokenSuccess'   ) {
+
+    if (message.eventType === 'msal:loginSuccess' || message.eventType === 'msal:acquireTokenSuccess') {
         console.log('Login successful:', message);
         idToken = message.payload.idToken;
         idTokenClaims = message.payload.idTokenClaims;
@@ -85,14 +85,14 @@ export function signOut() {
 function showWelcomeMessage(username) {
     const accounts = msalInstance.getAllAccounts();
     const account = accounts.find(acc => acc.username === username);
-    
+
     if (account) {
         console.group('Account Details');
         console.log('👤 Username:', account.username);
         console.log('🏠 Home Account ID:', account.homeAccountId);
         console.log('🏢 Tenant ID:', account.tenantId);
         console.log('🔐 Local Account ID:', account.localAccountId);
-        
+
         // Log additional claims if available
         if (account.idTokenClaims) {
             console.group('ID Token Claims');
@@ -104,7 +104,7 @@ function showWelcomeMessage(username) {
             });
             console.groupEnd();
         }
-        
+
         console.log('🔑 Scopes:', loginRequest.scopes);
         console.groupEnd();
     } else {
@@ -133,21 +133,21 @@ export async function getDataWithToken(endpoint) {
         };
 
         console.log('Request options:', JSON.stringify(options, null, 2));
-        
+
         // Log the actual request being made
         console.log('Making request to:', endpoint);
-        
-        const response = await fetch(endpoint  +"?ts="+Date.now()  , options);
-        
+
+        const response = await fetch(endpoint + "?ts=" + Date.now(), options);
+
         // Log response details for debugging
         console.log('Response status:', response.status, response.statusText);
-        
+
         // Check for 401 Unauthorized
         if (response.status === 401) {
             console.error('Authentication failed. Token might be invalid or expired.');
             // You might want to trigger a token refresh or re-authentication here
         }
-        
+
         return response;
     } catch (error) {
         console.error('Error in getDataWithToken:', error);
@@ -163,6 +163,19 @@ export function getIdToken() {
 export function getUserName() {
     if (idTokenClaims && idTokenClaims.name) {
         return idTokenClaims.name;
+    }
+    return null;
+}
+
+// Function to get the user's email (typically preferred_username) from the ID token
+export function getUserEmailFromToken() {
+    const accounts = msalInstance.getAllAccounts();
+    const account = accounts.find(acc => acc.username === username);
+
+    if (account) {
+        console.log(account.idTokenClaims)
+        console.log("return "+account.idTokenClaims.preferred_username)
+        return account.idTokenClaims.preferred_username;
     }
     return null;
 }

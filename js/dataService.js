@@ -1,8 +1,8 @@
-import { getDataWithToken, getUserName, getIdToken } from './authPopup.js';
+import { getDataWithToken, getUserName, getIdToken, getUserEmailFromToken } from './authPopup.js';
 // Data Service for Speaker Pool Application
 
-const endpoint      = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-data";
-const adminEndpoint      = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-admin-proxy/speakerpool-admin";
+const endpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-data";
+const adminEndpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-admin-proxy/speakerpool-admin";
 const deltaEndpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-delta"; //conclusion-assets/deltas";
 
 let speakerData = [];
@@ -45,8 +45,42 @@ export async function getSpeakerByName(name) {
     if (!name) return null;
     // Assuming speakerData is populated after initial load via loadSpeakerData().
     if (speakerData && speakerData.length > 0) {
-        const lowerCaseName = name.toLowerCase();
-        return speakerData.find(speaker => speaker.name && speaker.name.toLowerCase() === lowerCaseName);
+        const lowerCaseInput = name.toLowerCase();
+
+        // First, try to match by speaker's name
+        let foundSpeaker = speakerData.find(speaker => speaker.name && speaker.name.toLowerCase() === lowerCaseInput);
+
+        if (foundSpeaker) {
+            return foundSpeaker;
+        }
+
+        // If no match by name, try to match by comparing speaker's email address with the token's preferred_username claim
+        console.log(`No speaker found by name for input "${name}". Trying to match by token's preferred_username against speaker email.`);
+        const tokenEmail = getUserEmailFromToken();
+        if (tokenEmail) {
+            const lowerCaseTokenEmail = tokenEmail.toLowerCase();
+            foundSpeaker = speakerData.find(speaker =>
+                speaker.emailadress &&
+                typeof speaker.emailadress === 'string' &&
+                speaker.emailadress.toLowerCase() === lowerCaseTokenEmail
+            );
+            if (foundSpeaker) {
+                console.log(`Speaker found by matching token email (${tokenEmail}) with speaker email.`);
+                return foundSpeaker;
+            }
+        } else {
+            console.log('No email found in token to perform email-based matching.');
+        }
+
+        // If still no match, as a final fallback, try the original input 'name' against email (covers cases where 'name' param IS an email)
+        console.log(`No speaker found by token email. Final attempt: matching input "${name}" against speaker email.`);
+        foundSpeaker = speakerData.find(speaker =>
+            speaker.emailadress &&
+            typeof speaker.emailadress === 'string' &&
+            speaker.emailadress.toLowerCase() === lowerCaseInput // lowerCaseInput is name.toLowerCase()
+        );
+
+        return foundSpeaker; // This will be the speaker if found, or null/undefined if not
     }
     // Optionally, if speakerData might not be loaded yet, you could try loading it:
     // else if (typeof loadSpeakerData === 'function') {
@@ -101,12 +135,12 @@ export async function loadUserSpeakerData(username) {
     // e.g., https://<api-gw-host>/conclusion-proxy/speakerpool-delta
     // The API Gateway is configured to use request.auth[name] (which should match `username` here if called for self)
     // to determine the actual backend S3 object path.
-    const userDeltaEndpoint = deltaEndpoint; 
+    const userDeltaEndpoint = deltaEndpoint;
 
     console.log(`Attempting to GET user-specific speaker data from: ${userDeltaEndpoint} for user: ${username}`);
 
     try {
-        const response = await fetch(userDeltaEndpoint + `?ts=${Date.now()}`    , {
+        const response = await fetch(userDeltaEndpoint + `?ts=${Date.now()}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -119,7 +153,7 @@ export async function loadUserSpeakerData(username) {
             // Check if the delta file contains an empty JSON object or is otherwise invalid
             if (Object.keys(userSpecificData).length === 0) {
                 console.log(`User-specific delta file for ${username} is empty.`);
-                return null; 
+                return null;
             }
             if (!userSpecificData.id) {
                 console.warn(`User-specific data for ${username} is missing an 'id'.`, userSpecificData);
@@ -147,7 +181,7 @@ export async function loadSpeakerData() {
         let response;
         response = await getDataWithToken(endpoint)
 
-                
+
         // Use dataFilePAR which was set in initializeParameters
         // console.log(`Loading speaker data from: ${getDataUrl()}`);
         //  response = await fetch(getDataUrl(), {
@@ -202,9 +236,12 @@ export async function loadSpeakerData() {
                             if (speakerIndex !== -1) {
                                 console.log(`Admin mode: Merging delta for speaker ID ${delta.id} (${speakerData[speakerIndex].name}).`);
                                 speakerData[speakerIndex] = { ...speakerData[speakerIndex], ...delta };
-                               
+
                             } else {
                                 console.warn(`Admin mode: Delta received for unknown speaker ID ${delta.id}.`);
+                                console.log(`Admin mode: Adding delta as a new speaker with ID ${delta.id} (${delta.name}).`);
+                                speakerData.push(delta);
+
                             }
                         } else if (delta && delta.name) {
                             // Fallback: if no ID, try to match by normalized name (requires normalizeName function)
@@ -233,6 +270,78 @@ export async function loadSpeakerData() {
     }
 }
 
+// Function to add a new speaker profile for the currently logged-in user
+export async function addNewSpeakerProfile(newSpeakerProfileData) {
+    const currentUserName = getUserName();
+    if (!currentUserName) {
+        console.error('Cannot add new speaker profile: User not logged in.');
+        return { success: false, message: 'User not logged in.' };
+    }
+
+    // Ensure the profile name matches the logged-in user, or set it if not present
+    newSpeakerProfileData.name = currentUserName;
+
+    // Generate ID and uniqueId if they don't exist (they shouldn't for a new profile from UI)
+    if (!newSpeakerProfileData.id) {
+        newSpeakerProfileData.id = self.crypto.randomUUID().toString();
+    }
+    if (!newSpeakerProfileData.uniqueId) {
+        // For simplicity, uniqueId can be the same as id for new profiles, 
+        // or a separate UUID if strict distinction is needed later.
+        newSpeakerProfileData.uniqueId = newSpeakerProfileData.id;
+    }
+
+    // Add timestamps
+    const now = new Date().toISOString();
+    newSpeakerProfileData.createdDate = now;
+    newSpeakerProfileData.lastModified = now;
+
+    // The delta file name is based on the user's name (from JWT)
+    // IMPORTANT: Ensure deltaEndpoint is correctly defined and accessible for PUT requests for new files.
+    // The API Gateway should be configured to allow PUT to create a new delta if one doesn't exist.
+
+    console.log(`Attempting to save new speaker profile for ${currentUserName} to delta file via endpoint: ${deltaEndpoint}`);
+    const token = getIdToken();
+    if (!token) {
+        throw new Error('Authentication token not found. Please sign in.');
+    }
+
+    try {
+        const response = await fetch(deltaEndpoint, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newSpeakerProfileData)
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error('Error creating new profile:', response.status, errorBody);
+            throw new Error(`Failed to create profile: ${response.status} ${response.statusText}. Detail: ${errorBody}`);
+        }
+        console.log(`New speaker profile for ${currentUserName} saved successfully to remote delta.`);
+
+        // Add the new speaker to the local speakerData array
+        speakerData.push(newSpeakerProfileData);
+        console.log('New speaker added to local speakerData array:', newSpeakerProfileData);
+
+        // Dispatch an event so UI can update (e.g., hide 'Add Me' button, show 'My Profile', refresh lists)
+        window.dispatchEvent(new CustomEvent('speakerDataUpdated', {
+            detail: { speakerId: newSpeakerProfileData.id, isNew: true, newData: newSpeakerProfileData }
+        }));
+        window.dispatchEvent(new CustomEvent('newSpeakerAdded', { // More specific event
+            detail: { newSpeaker: newSpeakerProfileData }
+        }));
+
+        return { success: true, message: 'New speaker profile saved.', newSpeaker: newSpeakerProfileData };
+    } catch (error) {
+        console.error('Error saving new speaker profile delta:', error);
+        return { success: false, message: `Error saving new speaker profile: ${error.message || 'Unknown error'}` };
+    }
+}
+
 export async function updateMySpeakerProfile(updatedProfileData) {
     const currentUserName = getUserName();
     if (!currentUserName) {
@@ -251,7 +360,7 @@ export async function updateMySpeakerProfile(updatedProfileData) {
     // "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-delta"
     // (after removing /conclusion-assets/deltas/ from its original value)
     // This is the endpoint the PUT request should target.
-    const actualPutEndpoint = deltaEndpoint; 
+    const actualPutEndpoint = deltaEndpoint;
 
     // Add/update the lastModified timestamp
     updatedProfileData.lastModified = new Date().toISOString();
@@ -286,24 +395,24 @@ export async function updateMySpeakerProfile(updatedProfileData) {
         }
 
         // Dispatch an event to notify other modules (e.g., speakerDetailsModule to refresh)
-        document.dispatchEvent(new CustomEvent('speakerDataUpdated', { 
-            detail: { 
-                speakerId: updatedProfileData.id, 
-                updatedData: speakerData.find(s => s.id === updatedProfileData.id) || updatedProfileData 
+        document.dispatchEvent(new CustomEvent('speakerDataUpdated', {
+            detail: {
+                speakerId: updatedProfileData.id,
+                updatedData: speakerData.find(s => s.id === updatedProfileData.id) || updatedProfileData
             }
         }));
-        
+
         // Try to parse JSON from response, but handle cases where response might be empty (e.g., 204 No Content)
         const responseContentType = response.headers.get('content-type');
         let responseData = { success: true }; // Default success response
         if (responseContentType && responseContentType.includes('application/json')) {
             responseData = await response.json();
         } else if (response.status === 204) {
-             console.log('Profile updated successfully (204 No Content).');
+            console.log('Profile updated successfully (204 No Content).');
         } else {
             // If not JSON and not 204, just use default success and log the text if any
             const textResponse = await response.text();
-            if(textResponse) console.log('Update response text:', textResponse);
+            if (textResponse) console.log('Update response text:', textResponse);
         }
 
         return { success: true, data: responseData };
@@ -388,35 +497,43 @@ export function updateSpeaker(updatedSpeaker) {
     const index = speakerData.findIndex(speaker => speaker.id === updatedSpeaker.id);
 
     if (index !== -1) {
-        // Add/update the lastModified timestamp before updating
+        // Existing speaker found, update it
         updatedSpeaker.lastModified = new Date().toISOString();
-        
-        // Update the speaker's details in the in-memory array
         speakerData[index] = updatedSpeaker;
         console.log(`Admin mode: Updated speaker ${updatedSpeaker.name} in memory. lastModified: ${updatedSpeaker.lastModified}`);
-
-        // Dispatch an event to notify listeners of the data update
-        // This event can be used by UI components to refresh and by main.js to enable the admin save button
-        window.dispatchEvent(new CustomEvent('speakerDataModifiedByAdmin', {
-            detail: {
-                speakerId: updatedSpeaker.id,
-                updatedData: speakerData[index]
-            }
-        }));
-        window.dispatchEvent(new CustomEvent('speakerDataUpdated', { // also dispatch generic update for other listeners
-            detail: {
-                speakerId: updatedSpeaker.id,
-                updatedData: speakerData[index]
-            }
-        }));
-
-        return { success: true, data: null };; // Return true if the update was successful
-            return { success: true, data: null };
-
+    } else if (isInAdminMode()) {
+        // Speaker not found, BUT we are in admin mode.
+        // This handles the case where an admin used 'createNewSpeaker' which generated an ID,
+        // and this is the first 'save' for that new speaker.
+        console.log(`Admin mode: Speaker with ID ${updatedSpeaker.id} not found. Adding as new speaker.`);
+        if (!updatedSpeaker.createdDate) { // Set createdDate if not already set (e.g., by createNewSpeaker)
+            updatedSpeaker.createdDate = new Date().toISOString();
+        }
+        updatedSpeaker.lastModified = new Date().toISOString();
+        speakerData.push(updatedSpeaker);
+        console.log(`Admin mode: Added new speaker ${updatedSpeaker.name} to local speakerData.`);
     } else {
-        console.warn(`Speaker with ID ${updatedSpeaker.id} not found.`);
-        return false; // Return false if the speaker was not found
+        // Not found and not admin mode adding a new one - this is an error.
+        console.warn(`Speaker with ID ${updatedSpeaker.id} not found, and not in admin mode to add.`);
+        return { success: false, message: `Speaker with ID ${updatedSpeaker.id} not found.` };
     }
+
+    // Dispatch events for both update and admin-add-new scenarios
+    window.dispatchEvent(new CustomEvent('speakerDataModifiedByAdmin', {
+        detail: {
+            speakerId: updatedSpeaker.id,
+            updatedData: updatedSpeaker // Send the full updated/new speaker data
+        }
+    }));
+    window.dispatchEvent(new CustomEvent('speakerDataUpdated', {
+        detail: {
+            speakerId: updatedSpeaker.id,
+            updatedData: updatedSpeaker,
+            isNew: index === -1 && isInAdminMode() // Flag if it was an admin adding new
+        }
+    }));
+
+    return { success: true, message: index === -1 ? 'New speaker added by admin.' : 'Speaker updated by admin.' };
 }
 
 
@@ -542,7 +659,7 @@ async function retrieveAllSpeakerDeltas() {
         let deltaFileNames = allObjectPaths
             .map(obj => obj && obj.name) // Extract the name property
             .filter(name => typeof name === 'string'); // Ensure it's a string
-        
+
         // Further filter to include only actual delta files, e.g., those in a specific path
         // This path should match how your delta files are stored and identified.
         const deltasBasePath = 'conclusion-assets/deltas/'; // Adjust if your delta path is different
@@ -586,7 +703,7 @@ async function retrieveAllSpeakerDeltas() {
                 console.error(`Exception fetching individual delta file ${assetPath}:`, fileError);
             }
         }
-        
+
         console.log(`Admin mode: Successfully fetched ${allFetchedDeltas.length} delta files.`);
         return allFetchedDeltas;
 

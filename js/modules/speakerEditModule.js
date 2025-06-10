@@ -6,13 +6,14 @@ import {
     getAllCompanies, 
     getAllLanguages,
     getAllSpeakers,
-    isInAdminMode
+    isInAdminMode, addNewSpeakerProfile
 } from '../dataService.js';
-import { getUserName } from '../authPopup.js'; // Added to identify current user
+import { getUserName, getUserEmailFromToken } from '../authPopup.js'; // Added to identify current user and get email
 
 // Variable to store the modal instance
 let speakerEditModal = null;
 let currentSpeakerId = null;
+let currentSpeakerIsNew = false; // Flag to indicate if we are creating a new speaker
 
 // Function to initialize the speaker edit module
 async function initializeSpeakerEdit() {
@@ -143,6 +144,7 @@ function setupEventListeners() {
 
 // Function to open the edit modal for a speaker
 function editSpeaker(speakerId) {
+    currentSpeakerIsNew = false;
     // Store the current speaker ID
     currentSpeakerId = speakerId;
     
@@ -199,6 +201,7 @@ function createNewSpeaker() {
     
     // Store the current speaker ID
     currentSpeakerId = newId;
+    currentSpeakerIsNew = true; // Admin is creating a new speaker
     
     // Update modal title to indicate creating a new speaker
     const modalTitle = document.getElementById('speakerEditModalLabel');
@@ -362,86 +365,147 @@ async function populateLanguages(speakerLanguages) {
 
 // Function to save speaker changes
 async function saveSpeakerChanges() {
-    // Collect data from form
-    const name = document.getElementById('edit-name').value?.trim();
-    const email = document.getElementById('edit-email').value?.trim();
-    const companySelect = document.getElementById('edit-company-select');
-    const company = companySelect.value;
-    const imageUrl = document.getElementById('edit-image-url').value?.trim();
-    const linkedInURL = document.getElementById('edit-linkedin-url').value?.trim();
+    const currentUserName = getUserName(); // Get current user's name for context
+    const adminModeActive = isInAdminMode();
 
-    const internal = document.getElementById('edit-internal').checked;
-    const external = document.getElementById('edit-external').checked;
-
-    const languages = {};
-    document.querySelectorAll('#edit-languages-container .form-check-input').forEach(checkbox => {
-        languages[checkbox.value] = checkbox.checked;
-    });
-
-    const topics = document.getElementById('edit-topics').value?.trim();
-    const bio = document.getElementById('edit-bio').value?.trim();
-    const recentPresentations = document.getElementById('edit-presentations').value?.trim();
-    const context = document.getElementById('edit-context').value?.trim();
-
-    if (!name) {
-        alert('Speaker name is required.');
-        return;
-    }
-
-    const originalSpeaker = getSpeakerById(currentSpeakerId);
-    if (!originalSpeaker) {
-        alert('Error: Original speaker data not found. Cannot save changes.');
-        return;
-    }
-
+    // Collect data from the form
     const updatedSpeakerData = {
-        ...originalSpeaker, // Preserve existing fields like id, uniqueId, and any others not on the form
-        name,
-        emailadress: email, 
-        company,
-        imageUrl,
-        linkedInURL,
-        internal,
-        external,
-        languages,
-        topics,
-        bio,
-        recent_presentations: recentPresentations,
-        context
+        id: currentSpeakerId, // This will be null if currentSpeakerIsNew (for self-add) or the generated ID for admin-new
+        name: document.getElementById('edit-name').value,
+        emailadress: document.getElementById('edit-email').value,
+        company: document.getElementById('edit-company-select').value,
+        imageUrl: document.getElementById('edit-image-url').value,
+        internal: document.getElementById('edit-internal').checked,
+        external: document.getElementById('edit-external').checked,
+        languages: {},
+        topics: document.getElementById('edit-topics').value,
+        bio: document.getElementById('edit-bio').value,
+        recent_presentations: document.getElementById('edit-presentations').value,
+        context: document.getElementById('edit-context').value,
+        // uniqueId will be handled by dataService for new self-speaker, or already set for existing/admin-new
     };
 
-    const speakerBeingEdited = originalSpeaker; 
-    const loggedInUserName = getUserName();
-    const isEditingOwnProfile = speakerBeingEdited && loggedInUserName && 
-                                speakerBeingEdited.name && 
-                                speakerBeingEdited.name.toLowerCase() === loggedInUserName.toLowerCase();
+    // If it's an existing speaker, retain their uniqueId
+    if (!currentSpeakerIsNew && currentSpeakerId) {
+        const existingSpeaker = getSpeakerById(currentSpeakerId);
+        if (existingSpeaker) {
+            updatedSpeakerData.uniqueId = existingSpeaker.uniqueId;
+        }
+    }
+    // If it's an admin creating a new speaker, uniqueId was generated by createNewSpeaker and set in populateEditForm
+    // If it's a user adding themselves, uniqueId will be set by addNewSpeakerProfile in dataService
+
+
+    // Collect selected languages
+    const languageCheckboxes = document.querySelectorAll('#edit-languages-container .form-check-input');
+    languageCheckboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            updatedSpeakerData.languages[checkbox.value] = true;
+        }
+    });
+
+    let savePromise;
+
+    if (currentSpeakerIsNew && !adminModeActive) {
+        // Scenario: Logged-in user is adding themselves as a new speaker
+        console.log('Saving new self-speaker profile:', updatedSpeakerData.name);
+        // id and uniqueId will be generated by addNewSpeakerProfile
+        // We pass the collected form data; name is already set from pre-fill.
+        updatedSpeakerData.id = null; // Explicitly null for addNewSpeakerProfile to generate
+        updatedSpeakerData.uniqueId = null;
+        savePromise = addNewSpeakerProfile(updatedSpeakerData);
+    } else if (adminModeActive) {
+        // Scenario: Admin is active
+        if (currentSpeakerIsNew) {
+            // Admin created a new speaker profile from scratch using createNewSpeaker()
+            // ID and uniqueId were generated by createNewSpeaker and are in currentSpeakerId
+            updatedSpeakerData.id = currentSpeakerId; 
+            const tempSpeakerForUniqueId = getSpeakerById(currentSpeakerId); // tempSpeakerForUniqueId might be null if not yet in global speakerData
+            // This case needs careful handling: createNewSpeaker adds a shell to speakerData, or updateSpeaker needs to handle adding if not found.
+            // For now, assume createNewSpeaker's generated ID is what we use.
+            // It's better if createNewSpeaker adds a placeholder to speakerData, then updateSpeaker updates it.
+            // Or, have an adminAddNewSpeaker function in dataService.
+            // Let's simplify: updateSpeaker should be able to handle adding if ID is new for admin.
+            // For now, we'll rely on the ID being set if currentSpeakerIsNew was true from createNewSpeaker()
+            console.log('Admin saving newly created speaker profile:', updatedSpeakerData.name, 'ID:', updatedSpeakerData.id);
+            savePromise = updateSpeaker(updatedSpeakerData); // dataService.updateSpeaker handles in-memory update and dispatches event
+        } else {
+            // Admin is editing an existing speaker profile
+            console.log('Admin updating existing speaker profile:', updatedSpeakerData.name, 'ID:', updatedSpeakerData.id);
+            savePromise = updateSpeaker(updatedSpeakerData); // dataService.updateSpeaker handles in-memory update and dispatches event
+        }
+    } else {
+        // Scenario: Logged-in user is editing their own existing profile (not admin mode)
+        console.log('User updating their own existing profile:', updatedSpeakerData.name, 'ID:', updatedSpeakerData.id);
+        savePromise = updateMySpeakerProfile(updatedSpeakerData);
+    }
 
     try {
-        let result;
-        if (isEditingOwnProfile) {
-            console.log(`Saving changes for own profile (ID: ${currentSpeakerId}) via updateMySpeakerProfile...`);
-            result = await updateMySpeakerProfile(updatedSpeakerData);
-        } else if (isInAdminMode()) { // Admin editing someone else or creating new
-            console.log(`Saving changes as admin (ID: ${currentSpeakerId}) via updateSpeaker...`);
-            result = await updateSpeaker(updatedSpeakerData); // Existing admin save logic
-        } else {
-            alert('You do not have permission to save these changes.');
-            return;
-        }
-
+        const result = await savePromise;
         if (result && result.success) {
             speakerEditModal.hide();
-            alert('Speaker profile updated successfully!');
+            if (currentSpeakerIsNew && !adminModeActive) {
+                // Specific message for self-added new speaker
+                alert('Your speaker profile has been successfully saved! It will be processed into the main speaker pool shortly.  Note: This process may take a few days. In the meantime you will not yet be able to see your own profile - nor will others be able to see it.');
+                console.log('New self-speaker profile saved successfully:', result.message);
+            } else {
+                // Generic success for other cases (admin updates, self-updates of existing profile)
+                console.log('Save operation successful:', result.message || 'Profile saved.');
+                // Optionally, show a generic alert for other successful saves if desired:
+                // alert('Speaker profile updated successfully!'); 
+            }
+            // UI updates (like refreshing lists or buttons) are handled by event listeners
         } else {
-            const errorMessage = result && result.error ? (result.error.message || JSON.stringify(result.error)) : 'An unknown error occurred.';
-            console.error('Failed to save speaker changes:', errorMessage);
-            alert(`Failed to save changes: ${errorMessage}`);
+            console.error('Save operation failed:', result ? result.message : 'No result or success flag.');
+            alert(`Failed to save speaker profile: ${result ? result.message : 'Unknown error'}`);
         }
     } catch (error) {
-        console.error('Error during saveSpeakerChanges:', error);
-        alert(`An error occurred while saving changes: ${error.message || error}`);
+        console.error('Error saving speaker changes:', error);
+        alert(`Error saving speaker profile: ${error.message || 'An unexpected error occurred.'}`);
     }
+    currentSpeakerIsNew = false; // Reset flag after save attempt
 }
 
 
-export { initializeSpeakerEdit, editSpeaker, createNewSpeaker };
+function openForNewSelfSpeaker() {
+    const currentUserName = getUserName();
+    const currentUserEmail = getUserEmailFromToken();
+
+    if (!currentUserName) {
+        alert('Cannot add new speaker profile: User information not available. Please sign in again.');
+        console.error('openForNewSelfSpeaker: currentUserName is null.');
+        return;
+    }
+    currentSpeakerIsNew = true;
+    currentSpeakerId = null; // No ID yet for a new speaker being added by self
+
+    const newSelfSpeakerObject = {
+        id: null, // Will be generated by dataService on save
+        uniqueId: null, // Will be generated by dataService on save
+        name: currentUserName, // Pre-fill with the name claim
+        emailadress: currentUserEmail || '', // Pre-fill with preferred_username, fallback to empty
+        company: '',
+        imageUrl: '',
+        internal: false,
+        external: false,
+        languages: {},
+        topics: '',
+        bio: '',
+        recent_presentations: '',
+        context: '',
+        // createdDate and lastModified will be set by dataService
+    };
+
+    const modalTitle = document.getElementById('speakerEditModalLabel');
+    if (modalTitle) {
+        modalTitle.textContent = 'Add Your Speaker Profile';
+    }
+
+    populateEditForm(newSelfSpeakerObject);
+
+    if (speakerEditModal) {
+        speakerEditModal.show();
+    }
+}
+
+export { initializeSpeakerEdit, editSpeaker, createNewSpeaker, openForNewSelfSpeaker };

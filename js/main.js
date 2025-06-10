@@ -5,12 +5,24 @@ import { loadDashboardContent } from './modules/tabs/dashboardTab.js';
 import { loadFindContent } from './modules/tabs/findTab.js';
 import { loadSpeakersContent } from './modules/tabs/speakersTab.js';
 import { initializeSpeakerDetails, showSpeakerDetails } from './modules/speakerDetailsModule.js';
+import { openForNewSelfSpeaker as openNewSpeakerForm } from './modules/speakerEditModule.js'; // Alias for clarity
 import { setupAuthUI , handleLogin, updateAuthUI} from './authUI.js';
 
 let adminSaveButton = null; // To hold the admin save button element
 
+// Function to refresh user-specific buttons based on current speaker data
+async function refreshUserSpecificButtons() {
+    console.log('Refreshing user-specific buttons (My Profile / Add Me).');
+    await displayUserProfileButton();
+    await displayAddMeAsSpeakerButton();
+}
+
 // Initialize the application when DOM is fully loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Listen for custom events indicating data changes that affect button visibility
+    window.addEventListener('speakerDataUpdated', refreshUserSpecificButtons);
+    window.addEventListener('newSpeakerAdded', refreshUserSpecificButtons);
+
     // Add MSAL login success listener
     window.addEventListener('msalLoginSuccess', async (event) => {
         console.log('MSAL Login Success Event:', event.detail);
@@ -22,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadSpeakerData();
             await refreshUIwithSpeakerData();
             await displayUserProfileButton(); // Check and display 'Show My Profile' button
+            await displayAddMeAsSpeakerButton(); // Check and display 'Add Me as Speaker' button
         }
 
     });
@@ -152,14 +165,46 @@ async function initializeApp() {
     }
 }
 
+async function displayAddMeAsSpeakerButton() {
+    const addButtonContainer = document.getElementById('add-me-as-speaker-button-container');
+    if (!addButtonContainer) {
+        console.error('"Add Me as Speaker" button container not found');
+        return;
+    }
+    addButtonContainer.innerHTML = ''; // Clear previous button if any
+    addButtonContainer.classList.add('d-none'); // Hide by default
+
+    const currentUserName = getUserName();
+    if (currentUserName && !isInAdminMode()) { // Only show if logged in and NOT in admin mode
+        try {
+            const speakerProfile = await getSpeakerByName(currentUserName);
+            if (!speakerProfile) { // User is logged in but NOT found as a speaker
+                const button = document.createElement('button');
+                button.id = 'addMeAsSpeakerBtn';
+                button.className = 'btn btn-success btn-sm'; // Using btn-success for add actions
+                button.textContent = 'Add Me as Speaker';
+                button.addEventListener('click', () => {
+                    // Navigate to speaker edit form, indicating it's a new profile for the current user
+                    // The speakerEditModule will need to handle this 'newProfileForUser' scenario
+                    console.log(`User ${currentUserName} wants to add themselves as a speaker.`);
+                    openNewSpeakerForm();
+                });
+                addButtonContainer.appendChild(button);
+                addButtonContainer.classList.remove('d-none'); // Show the container
+            }
+        } catch (error) {
+            console.error('Error checking if current user is a speaker:', error);
+        }
+    }
+}
+
 async function displayUserProfileButton() {
     const profileButtonContainer = document.getElementById('my-profile-button-container');
     if (!profileButtonContainer) {
-        console.error('Profile button container not found');
+        console.error('"My Profile" button container not found');
         return;
     }
-
-    profileButtonContainer.innerHTML = ''; // Clear previous button
+    profileButtonContainer.innerHTML = ''; // Clear previous button if any
     profileButtonContainer.classList.add('d-none'); // Hide by default
 
     const currentUserName = getUserName(); // From authPopup.js
@@ -231,6 +276,7 @@ async function refreshUIwithSpeakerData() {
 
     // Update UI to show user status
     updateAuthUI();
+    await displayAddMeAsSpeakerButton(); // Also check here after data refresh
 }
 
 function initializeTabEventListeners() {
