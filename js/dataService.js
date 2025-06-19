@@ -590,7 +590,7 @@ export async function saveSpeakerDataAsAdmin() {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
-                'Asset-Path': 'conclusion-assets/SprekerpoolADMIN.json'
+                'Asset-Path': 'sprekerpool/SprekerpoolADMIN.json'
             },
             body: JSON.stringify(speakerData) // Send the entire current speakerData array
         });
@@ -662,7 +662,7 @@ async function retrieveAllSpeakerDeltas() {
 
         // Further filter to include only actual delta files, e.g., those in a specific path
         // This path should match how your delta files are stored and identified.
-        const deltasBasePath = 'conclusion-assets/deltas/'; // Adjust if your delta path is different
+        const deltasBasePath = 'sprekerpool/deltas/'; // Adjust if your delta path is different
         deltaFileNames = deltaFileNames.filter(name => name.startsWith(deltasBasePath));
 
         if (deltaFileNames.length === 0) {
