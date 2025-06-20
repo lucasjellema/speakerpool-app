@@ -49,10 +49,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Listen for admin-related data events
     window.addEventListener('speakerDataModifiedByAdmin', () => {
         if (adminSaveButton && isInAdminMode()) {
-            adminSaveButton.disabled = false;
+            // Button already enabled in admin-mode, just update text and show container
             adminSaveButton.textContent = 'Save All Data';
             document.getElementById('admin-save-button-container').classList.remove('d-none');
-            console.log('Admin mode: Changes detected, save button enabled.');
+            console.log('Admin mode: Changes detected, save button container shown.');
         }
     });
 
@@ -91,7 +91,7 @@ function createAdminSaveButton() {
     button.id = 'adminSaveAllDataBtn';
     button.className = 'btn btn-danger btn-sm'; // Using btn-danger for admin actions
     button.textContent = 'Save All Data';
-    button.disabled = true; // Start disabled, enable on 'speakerDataModifiedByAdmin'
+    button.disabled = false; // Always enabled in admin-mode
     
     button.addEventListener('click', async () => {
         if (!isInAdminMode()) return;
