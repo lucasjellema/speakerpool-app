@@ -3,7 +3,7 @@ import { getDataWithToken, getUserName, getIdToken, getUserEmailFromToken } from
 
 const endpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-data";
 const adminEndpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-admin-proxy/speakerpool-admin";
-const deltaEndpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-delta"; //conclusion-assets/deltas";
+const deltaEndpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-delta"; //sprekerpool/deltas";
 
 let speakerData = [];
 
@@ -343,6 +343,7 @@ export async function addNewSpeakerProfile(newSpeakerProfileData) {
 }
 
 export async function updateMySpeakerProfile(updatedProfileData) {
+    console.log('updateMySpeakerProfile called with:', updatedProfileData);
     const currentUserName = getUserName();
     if (!currentUserName) {
         throw new Error('User not authenticated or name claim is missing.');
