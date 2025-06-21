@@ -145,7 +145,8 @@ graph TD
 
     %% User-Specific Delta Flow (via API Gateway)
     C --> |"GET User Delta (Auth)"| I_API
-    H --> |"PUT User Delta (Auth)"| C %% speakerEditModule calls dataService
+    %% speakerEditModule calls dataService
+    H --> |"PUT User Delta (Auth)"| C
     
     %% External Libraries
     J[Bootstrap 5] --> A
