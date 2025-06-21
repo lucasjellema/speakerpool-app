@@ -375,6 +375,7 @@ async function saveSpeakerChanges() {
         emailadress: document.getElementById('edit-email').value,
         company: document.getElementById('edit-company-select').value,
         imageUrl: document.getElementById('edit-image-url').value,
+        linkedInURL: document.getElementById('edit-linkedin-url').value, // Add LinkedIn URL field
         internal: document.getElementById('edit-internal').checked,
         external: document.getElementById('edit-external').checked,
         languages: {},
