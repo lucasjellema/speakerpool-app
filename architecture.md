@@ -140,7 +140,8 @@ graph TD
     
     %% Authentication
     A --> |"Authenticates via"| M_Auth[MS Entra ID]
-    M_Auth --> |ID Token| C %% ID token used by dataService for API calls
+    %% ID token used by dataService for API calls
+    M_Auth --> |ID Token| C
 
     %% User-Specific Delta Flow (via API Gateway)
     C --> |"GET User Delta (Auth)"| I_API
