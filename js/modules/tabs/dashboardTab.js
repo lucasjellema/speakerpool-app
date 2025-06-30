@@ -122,7 +122,7 @@ function createCompanyChart(speakers) {
     });
 }
 
-// Function to create the languages chart
+// Function to create the languages chart (bar chart)
 function createLanguagesChart(speakers) {
     const chartCanvas = document.getElementById('languages-chart');
     if (!chartCanvas) return;
@@ -155,32 +155,47 @@ function createLanguagesChart(speakers) {
         languagesChart.destroy();
     }
     
-    // Create the chart
+    // Create the chart - using bar chart instead of pie chart
     languagesChart = new Chart(chartCanvas, {
-        type: 'pie',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
+                label: 'Number of speakers',
                 data: data,
                 backgroundColor: backgroundColors,
-                borderWidth: 1
+                borderWidth: 1,
+                borderColor: backgroundColors.map(color => color.replace('0.7', '1'))
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            indexAxis: 'y',  // Horizontal bar chart for better readability
             plugins: {
                 legend: {
-                    position: 'right',
-                    labels: {
-                        boxWidth: 15
-                    }
+                    display: false  // No need for legend in bar chart
                 },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return `${context.label}: ${context.raw} speakers`;
+                            return `${context.raw} speakers`;
                         }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Number of speakers'
+                    },
+                    beginAtZero: true
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Language'
                     }
                 }
             },
@@ -192,7 +207,7 @@ function createLanguagesChart(speakers) {
                 }
             },
             elements: {
-                arc: {
+                bar: {
                     hoverCursor: 'pointer'
                 }
             }

@@ -7,7 +7,7 @@ A modern, modular single-page web application for managing and presenting a pool
 ### Dashboard
 - Total speakers statistics with breakdown by availability
 - Interactive company distribution chart
-- Languages distribution visualization
+- Languages distribution bar chart visualization
 - Topics tag cloud with frequency-based sizing
 - Raw data preview toggle
 
@@ -19,6 +19,13 @@ A modern, modular single-page web application for managing and presenting a pool
 
 ### Speaker Management
 - Complete speaker details view
+
+### Self-Registration for New Speakers
+- **Button Visibility**: Logged-in users who are not already listed as speakers will see an "Add Me as Speaker" button in the header.
+- **Pre-filled Form**: Clicking this button opens the speaker profile edit form, pre-filled with the user's name and email address (obtained from their authentication token).
+- **Profile Creation**: Users can complete the form and save their details. This action creates a user-specific delta file (e.g., `YourUserName.json`) containing their profile information.
+- **Confirmation**: Upon successful submission, the user receives a confirmation message: "Your speaker profile has been successfully saved! It will be processed into the main speaker pool shortly. Note: This process may take a few days. In the meantime you will not yet be able to see your own profile - nor will others be able to see it."
+- **Button Update**: After successful self-registration, the "Add Me as Speaker" button is hidden, and the "Show My Profile" button becomes visible.
 
 ### Admin Mode (New)
 - **Activation**: Via URL parameter `admin=yes` (e.g., `index.html?admin=yes`).
