@@ -7,6 +7,7 @@ import { loadSpeakersContent } from './modules/tabs/speakersTab.js';
 import { initializeSpeakerDetails, showSpeakerDetails } from './modules/speakerDetailsModule.js';
 import { openForNewSelfSpeaker as openNewSpeakerForm } from './modules/speakerEditModule.js'; // Alias for clarity
 import { setupAuthUI , handleLogin, updateAuthUI} from './authUI.js';
+import { initializePrivacyLink } from './modules/privacyLink.js';
 
 let adminSaveButton = null; // To hold the admin save button element
 
@@ -127,7 +128,8 @@ function createAdminSaveButton() {
 
 async function initializeApp() {
     try {
-     
+        // Initialize the privacy statement link
+        initializePrivacyLink();
         
         // Set up the UI
         const { updateUI } = setupAuthUI();
