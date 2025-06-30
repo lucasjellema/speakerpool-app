@@ -2,6 +2,7 @@ import { getDataWithToken, getUserName, getIdToken, getUserEmailFromToken } from
 // Data Service for Speaker Pool Application
 
 const endpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-data";
+export const privacyStatementEndpoint = "https://axfaxcymae5t.objectstorage.eu-amsterdam-1.oci.customer-oci.com/p/w9Sk0kiQboRo5oFGk1x-kOiWiR1P8X8ULXpGjupWbq3TtJJhK45HXGSxS5sLXlVd/n/axfaxcymae5t/b/conclusion-assets/o/public/Privacy statement Conclusion Sprekerpool.pdf";
 const adminEndpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-admin-proxy/speakerpool-admin";
 const deltaEndpoint = "https://odzno3g32mjesdrjipad23mbxq.apigateway.eu-amsterdam-1.oci.customer-oci.com/conclusion-proxy/speakerpool-delta"; //sprekerpool/deltas";
 

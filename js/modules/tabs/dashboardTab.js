@@ -1,5 +1,6 @@
 // Dashboard Tab Module
 import { getAllSpeakers } from '../../dataService.js';
+import { initializePrivacyLink } from '../privacyLink.js';
 
 // Chart instances
 let companyChart = null;
@@ -23,6 +24,9 @@ async function loadDashboardContent() {
         
         // Set up event listeners
         initializeEventListeners();
+        
+        // Initialize privacy statement link
+        initializePrivacyLink();
         
     } catch (error) {
         console.error('Error loading dashboard content:', error);
